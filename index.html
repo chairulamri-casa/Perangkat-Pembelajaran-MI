@@ -17577,21 +17577,24 @@ function susunDraftModul(tpRow, ma0, konteks, opsi) {
     const set = _FASE_INTI[keluarga] || _FASE_INTI.umum;
     const t = set[i % set.length];
     const q = { ...p };
+    const adaIsi = [p.kegiatanAwal, p.kegiatanIntiMemahami, p.kegiatanIntiMengaplikasi, p.kegiatanIntiMerefleksi, p.kegiatanPenutup].some((x) => String(x || "").trim() !== "");
+    const jaga = adaIsi && !timpa;
+    const pakaiT = (lama, baru) => jaga ? lama : pakai(lama, baru);
     const mA = _menit(jp, "awal"), mP = _menit(jp, "penutup");
-    q.judul = pakai(p.judul && !/^Pertemuan ke-\d+$/.test(p.judul) ? p.judul : "", "Pertemuan ke-" + (i + 1) + ": " + f.fokus.charAt(0).toUpperCase() + f.fokus.slice(1));
-    q.metodePertemuan = pakai(p.metodePertemuan, (k.isMadrasah && metodeKBC.length ? metodeKBC[i % metodeKBC.length] : metodeUmum[i % Math.max(1, metodeUmum.length)] || METODE_PERTEMUAN[0]));
-    q.kegiatanAwal = pakai(p.kegiatanAwal, "(" + mA + " menit) " + _PEMBUKA[i % _PEMBUKA.length] + " Apersepsi: guru mengajukan pertanyaan pemantik tentang " + f.fokus + ".");
-    q.kegiatanIntiMemahami = pakai(p.kegiatanIntiMemahami, "(" + _menit(jp, "memahami") + " menit) " + _isiTemplat(t[0], v));
-    q.kegiatanIntiMengaplikasi = pakai(p.kegiatanIntiMengaplikasi, "(" + _menit(jp, "mengaplikasi") + " menit) " + _isiTemplat(t[1], v));
-    q.kegiatanIntiMerefleksi = pakai(p.kegiatanIntiMerefleksi, "(" + _menit(jp, "merefleksi") + " menit) " + _isiTemplat(t[2], v));
+    q.judul = jaga ? p.judul : pakai(p.judul && !/^Pertemuan ke-\d+$/.test(p.judul) ? p.judul : "", "Pertemuan ke-" + (i + 1) + ": " + f.fokus.charAt(0).toUpperCase() + f.fokus.slice(1));
+    q.metodePertemuan = pakaiT(p.metodePertemuan, (k.isMadrasah && metodeKBC.length ? metodeKBC[i % metodeKBC.length] : metodeUmum[i % Math.max(1, metodeUmum.length)] || METODE_PERTEMUAN[0]));
+    q.kegiatanAwal = pakaiT(p.kegiatanAwal, "(" + mA + " menit) " + _PEMBUKA[i % _PEMBUKA.length] + " Apersepsi: guru mengajukan pertanyaan pemantik tentang " + f.fokus + ".");
+    q.kegiatanIntiMemahami = pakaiT(p.kegiatanIntiMemahami, "(" + _menit(jp, "memahami") + " menit) " + _isiTemplat(t[0], v));
+    q.kegiatanIntiMengaplikasi = pakaiT(p.kegiatanIntiMengaplikasi, "(" + _menit(jp, "mengaplikasi") + " menit) " + _isiTemplat(t[1], v));
+    q.kegiatanIntiMerefleksi = pakaiT(p.kegiatanIntiMerefleksi, "(" + _menit(jp, "merefleksi") + " menit) " + _isiTemplat(t[2], v));
     q.kegiatanPenutup = pakai(p.kegiatanPenutup, "(" + mP + " menit) Murid dan guru menyimpulkan pelajaran, murid mengisi exit ticket, guru menyampaikan rencana pertemuan berikutnya, lalu berdoa dan salam penutup.");
-    q.exitTicket = pakai(p.exitTicket, "Tuliskan satu hal baru yang kamu pelajari tentang " + f.fokus + " dan satu hal yang masih ingin kamu tanyakan.");
+    q.exitTicket = pakaiT(p.exitTicket, "Tuliskan satu hal baru yang kamu pelajari tentang " + f.fokus + " dan satu hal yang masih ingin kamu tanyakan.");
     q.berkesadaran = pakai(p.berkesadaran, _BERKESADARAN[i % 3]);
     q.bermakna = pakai(p.bermakna, _BERMAKNA[i % 3]);
     q.menggembirakan = pakai(p.menggembirakan, _MENGGEMBIRAKAN[i % 3]);
     if (k.isMadrasah) {
-      q.pancaCinta = pakai(p.pancaCinta, cintaIds.slice(0, 2));
-      q.bentukPenerapanCinta = pakai(p.bentukPenerapanCinta, "Murid membiasakan adab belajar, saling menghargai, dan bersyukur atas ilmu saat mempelajari " + f.fokus + ".");
+      q.pancaCinta = pakaiT(p.pancaCinta, cintaIds.slice(0, 2));
+      q.bentukPenerapanCinta = pakaiT(p.bentukPenerapanCinta, "Murid membiasakan adab belajar, saling menghargai, dan bersyukur atas ilmu saat mempelajari " + f.fokus + ".");
     }
     return q;
   });
