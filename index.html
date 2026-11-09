@@ -10433,22 +10433,53 @@ function RosterGuruPanel({ supabase, profile, onClose }) {
       setMsg("\u2715 Pilih madrasah dulu.");
       return;
     }
-    const rows = bulkText.split("\n").map((l) => l.trim()).filter(Boolean).map((line) => {
-      const [nama, nip] = line.split(",").map((s) => s?.trim());
-      return nama && nip ? { madrasah_id: madrasahId, nama, nip_nik: nip } : null;
-    }).filter(Boolean);
+    const rows = [];
+    const dilewati = [];
+    const kembar = [];
+    const sudahAda = new Set();
+    bulkText.split("\n").map((l) => l.trim()).filter(Boolean).forEach((line) => {
+      let nama = "", nip = "";
+      if (line.includes("\t")) {
+        const p = line.split("\t").map((s) => s.trim()).filter(Boolean);
+        nama = p[0] || "";
+        nip = p.length > 1 ? p[p.length - 1] : "";
+      } else {
+        const i = line.lastIndexOf(",");
+        if (i > 0) {
+          nama = line.slice(0, i).trim();
+          nip = line.slice(i + 1).trim();
+        }
+      }
+      nama = nama.replace(/\s+/g, " ").trim();
+      nip = nip.replace(/\s+/g, "");
+      if (/^nama$/i.test(nama) && /nip|nik/i.test(nip)) return;
+      if (!nama || !/^\d{8,}$/.test(nip)) {
+        dilewati.push(line);
+        return;
+      }
+      if (sudahAda.has(nip)) {
+        kembar.push(nama);
+        return;
+      }
+      sudahAda.add(nip);
+      rows.push({ madrasah_id: madrasahId, nama, nip_nik: nip });
+    });
     if (rows.length === 0) {
-      setMsg("\u2715 Format harus: Nama, NIP/NIK (satu baris per guru).");
+      setMsg("\u2715 Tidak ada baris yang bisa dibaca. Format: Nama, NIP/NIK (NIP/NIK di bagian paling akhir, satu baris per guru).");
       return;
     }
     setBusy(true);
     const { error } = await supabase.from("guru_terdaftar").insert(rows);
     setBusy(false);
     if (error) {
-      setMsg("\u2715 Gagal simpan: " + error.message);
+      const bentrok = error.code === "23505" || /duplicate key/i.test(error.message || "");
+      setMsg("\u2715 " + (bentrok ? "Ada NIP/NIK yang sudah terdaftar di madrasah ini. Lihat daftar 'Guru terdaftar' di bawah, lalu hapus baris yang sudah ada dari kotak teks dan coba lagi." : "Gagal simpan: " + error.message));
       return;
     }
-    setMsg(`\u2713 ${rows.length} guru berhasil didaftarkan.`);
+    const catatan = [];
+    if (dilewati.length) catatan.push(dilewati.length + " baris dilewati karena NIP/NIK tidak terbaca (" + dilewati.slice(0, 2).join(" | ") + (dilewati.length > 2 ? " ..." : "") + ")");
+    if (kembar.length) catatan.push(kembar.length + " baris kembar diabaikan");
+    setMsg(`\u2713 ${rows.length} guru berhasil didaftarkan.` + (catatan.length ? " " + catatan.join("; ") + "." : ""));
     setBulkText("");
     loadRoster();
   };
@@ -10526,7 +10557,7 @@ function RosterGuruPanel({ supabase, profile, onClose }) {
     },
     /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Pilih Madrasah \u2014"),
     madrasahList.map((m) => /* @__PURE__ */ React.createElement("option", { key: m.id, value: m.id }, m.nama))
-  ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#8fa3c4", marginBottom: 6 } }, "Upload file Excel (kolom A = Nama, kolom B = NIP/NIK), atau tempel manual di bawah \u2014 satu baris per orang, format: ", /* @__PURE__ */ React.createElement("code", { style: { color: "#dbe6fa" } }, "Nama, NIP/NIK")), /* @__PURE__ */ React.createElement("label", { style: { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", marginBottom: 10, borderRadius: 8, border: "1px solid #2c4a78", background: "#0f1b2d", color: "#8fa3c4", fontSize: 12.5, cursor: madrasahId ? "pointer" : "not-allowed", opacity: madrasahId ? 1 : 0.5 } }, "\u{1F4CE} Pilih File Excel (.xlsx/.xls/.csv)", /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#8fa3c4", marginBottom: 6 } }, "Upload file Excel (kolom A = Nama, kolom B = NIP/NIK), atau tempel manual di bawah \u2014 satu baris per orang, format: ", /* @__PURE__ */ React.createElement("code", { style: { color: "#dbe6fa" } }, "Nama, NIP/NIK"), " \u2014 NIP/NIK di bagian paling akhir; boleh juga tempel dua kolom langsung dari Excel."), /* @__PURE__ */ React.createElement("label", { style: { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", marginBottom: 10, borderRadius: 8, border: "1px solid #2c4a78", background: "#0f1b2d", color: "#8fa3c4", fontSize: 12.5, cursor: madrasahId ? "pointer" : "not-allowed", opacity: madrasahId ? 1 : 0.5 } }, "\u{1F4CE} Pilih File Excel (.xlsx/.xls/.csv)", /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "file",
