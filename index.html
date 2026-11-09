@@ -17438,6 +17438,195 @@ function emptyModulAjar(tpRow, jpPerPertemuan) {
     // [{indKode, indTeks, teknik, instrumen, kriteria}]
   };
 }
+// ===== Bank kegiatan Fikih MI (dipakai penyusun draf bila mapel = fikih) =====
+const _BANK_FIKIH = [
+  { re: /rukun islam/i, topik: "rukun Islam",
+    kisah: "Guru menceritakan hadis Jibril: Rasulullah SAW menjelaskan bahwa Islam dibangun di atas lima perkara, yaitu syahadat, salat, zakat, puasa Ramadan, dan haji bagi yang mampu (HR. Bukhari dan Muslim).",
+    memahami: "Murid menyimak kisah, lalu menempelkan lima kartu rukun Islam pada gambar bangunan dan mengurutkannya dari fondasi sampai atap.",
+    mengaplikasi: "Dalam kelompok, murid memasangkan kartu rukun Islam dengan contoh pengamalannya (misalnya salat Subuh di masjid, puasa di bulan Ramadan, membayar zakat fitrah).",
+    merefleksi: "Murid menyebutkan rukun Islam yang sudah rutin ia lakukan dan satu yang ingin ia tingkatkan.",
+    pemantik: "Apa saja yang sudah kamu lakukan sebagai seorang muslim sejak kecil?", exit: "1. Sebutkan lima rukun Islam secara berurutan. 2. Rukun Islam yang ke-3 adalah ...",
+    cinta: "Murid bersyukur dan berniat mengamalkan rukun Islam dengan tertib.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid sudah mengenal salat, puasa, dan syahadat dari keluarga dan lingkungan.", media: "kartu rukun Islam, gambar bangunan lima tiang" },
+  { re: /tayamum/i, topik: "tayamum",
+    kisah: "Guru menceritakan keringanan dari Allah: ketika tidak ada air atau tidak boleh terkena air karena sakit, orang beriman boleh bersuci dengan debu yang suci (QS. Al-Maidah: 6).",
+    memahami: "Murid mengamati gambar urutan tayamum: niat, menepuk debu suci, mengusap wajah, menepuk lagi, mengusap kedua tangan sampai siku.",
+    mengaplikasi: "Guru mendemonstrasikan tayamum dengan media debu/batu bersih. Murid berpasangan mempraktikkan secara bergantian sambil mengisi ceklis urutan.",
+    merefleksi: "Murid menjelaskan kapan tayamum boleh dilakukan dan mengapa Allah memberi keringanan.",
+    pemantik: "Apa yang kamu lakukan jika waktu salat tiba tetapi tidak ada air?", exit: "1. Sebutkan dua keadaan yang membolehkan tayamum. 2. Sebutkan urutan tayamum dengan kata-katamu.",
+    cinta: "Murid mensyukuri kemudahan (rukhsah) yang Allah berikan dalam beribadah.", cintaIds: ["cinta_allah_rasul"],
+    awal: "Murid sudah mengetahui cara berwudu dan pentingnya bersuci sebelum salat.", media: "gambar urutan tayamum, wadah debu bersih" },
+  { re: /najis/i, topik: "najis dan cara membersihkannya",
+    kisah: "Guru menceritakan Rasulullah SAW menyuruh membersihkan tempat yang terkena najis agar ibadah sah dan tubuh tetap sehat.",
+    memahami: "Murid mengelompokkan gambar benda (air kencing, darah, kotoran, air susu, tanah) ke dalam kolom suci dan najis, lalu mengenal tiga jenis najis: ringan, sedang, dan berat.",
+    mengaplikasi: "Murid mempraktikkan simulasi menghilangkan najis pada kain dengan air bersih (tanpa bahan berbahaya) dan menandai langkah: hilangkan zat najis, siram atau basuh sampai bersih.",
+    merefleksi: "Murid menjelaskan mengapa menjaga kebersihan pakaian, badan, dan tempat salat itu penting.",
+    pemantik: "Apa yang kamu lakukan jika pakaianmu terkena kotoran sebelum salat?", exit: "1. Sebutkan dua contoh najis. 2. Bagaimana cara membersihkan najis yang sedang (mutawassithah)?",
+    cinta: "Murid membiasakan menjaga kebersihan diri dan lingkungan.", cintaIds: ["cinta_lingkungan", "cinta_allah_rasul"],
+    awal: "Murid mengetahui perbedaan bersih dan kotor dan kebiasaan mencuci tangan.", media: "gambar benda suci dan najis, kain, air bersih" },
+  { re: /mandi (wajib|besar)|junub|hadas besar|haid|nifas/i, topik: "mandi wajib",
+    kisah: "Guru menjelaskan dengan bahasa sederhana bahwa orang yang berhadas besar wajib mandi wajib agar bersih sebelum salat, membaca Al-Qur'an, atau masuk masjid.",
+    memahami: "Murid menyimak penjelasan sebab-sebab mandi wajib dan rukunnya: niat dan meratakan air ke seluruh tubuh, dengan bahasa sesuai usia.",
+    mengaplikasi: "Murid menyusun kartu urutan mandi wajib dan menentukan mana rukun dan mana sunah (membaca basmalah, mendahulukan yang kanan).",
+    merefleksi: "Murid menyebutkan satu hal yang ia pahami dan satu pertanyaan yang ingin ia tanyakan kepada orang tua atau guru.",
+    pemantik: "Mengapa orang yang berhadas besar harus mandi sebelum salat?", exit: "1. Sebutkan dua rukun mandi wajib. 2. Mengapa air harus merata ke seluruh tubuh?",
+    cinta: "Murid menjaga kebersihan diri sebagai wujud cinta kepada Allah.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid sudah memahami wudu dan pentingnya bersuci.", media: "kartu urutan mandi wajib, gambar" },
+  { re: /jenis air|macam air|air (mutlak|suci|musta|mutanajis|musyammas)/i, topik: "macam-macam air untuk bersuci",
+    kisah: "Guru menceritakan bahwa Allah menurunkan air dari langit untuk bersuci (QS. Al-Furqan: 48), lalu menunjukkan beberapa contoh air.",
+    memahami: "Murid mengamati contoh air (air hujan, air sumur, air teh, air sabun, air bekas wudu) dan mengenal empat macam air: suci mensucikan, suci tidak mensucikan, bernajis, dan musta'mal.",
+    mengaplikasi: "Dalam kelompok, murid mengelompokkan kartu contoh air ke dalam empat kolom dan memberi alasan pilihannya.",
+    merefleksi: "Murid menyimpulkan air mana yang boleh dipakai untuk wudu dan mengapa kita harus hemat air.",
+    pemantik: "Apakah semua air boleh dipakai untuk wudu? Air apa saja yang pernah kamu lihat?", exit: "1. Sebutkan dua contoh air suci mensucikan. 2. Mengapa air teh tidak boleh dipakai berwudu?",
+    cinta: "Murid menghemat air dan menjaga sumber air sebagai wujud syukur dan cinta lingkungan.", cintaIds: ["cinta_lingkungan", "cinta_allah_rasul"],
+    awal: "Murid mengenal air dan kegunaannya sehari-hari.", media: "contoh air dalam gelas bening, kartu gambar" },
+  { re: /wudu|wudhu/i, topik: "wudu",
+    kisah: "Guru menceritakan sabda Rasulullah SAW bahwa pada hari kiamat umatnya datang dengan wajah dan anggota wudu yang bercahaya karena bekas wudu (HR. Bukhari dan Muslim).",
+    memahami: "Murid menyimak kisah, lalu mengamati gambar urutan wudu: niat, membasuh wajah, membasuh kedua tangan sampai siku, mengusap sebagian kepala, membasuh kedua kaki sampai mata kaki, dan tertib.",
+    mengaplikasi: "Guru mendemonstrasikan wudu. Murid berpasangan mempraktikkan wudu bergantian dengan lembar ceklis rukun wudu; teman mengamati dan memberi tanda centang.",
+    merefleksi: "Murid menyebutkan bagian wudu yang sudah benar dan yang perlu diperbaiki, lalu menyebutkan hal yang membatalkan wudu.",
+    pemantik: "Mengapa sebelum salat kita harus berwudu? Apa yang terjadi jika berwudu terburu-buru?", exit: "1. Sebutkan tiga rukun wudu. 2. Sebutkan dua hal yang membatalkan wudu.",
+    cinta: "Murid berwudu dengan tertib dan hemat air sebagai wujud cinta kepada Allah dan lingkungan.", cintaIds: ["cinta_allah_rasul", "cinta_lingkungan"],
+    awal: "Murid sudah mengenal salat dan pernah melihat orang berwudu.", media: "gambar urutan wudu, ceklis rukun wudu" },
+  { re: /thaharah|bersuci|hadas|suci/i, topik: "thaharah (bersuci)",
+    kisah: "Guru menyampaikan sabda Rasulullah SAW: \"Kebersihan sebagian dari iman\" (HR. Muslim) dan mengaitkannya dengan kebiasaan bersuci sebelum ibadah.",
+    memahami: "Murid mengenal arti thaharah, jenis hadas (kecil dan besar), dan cara bersuci (wudu, mandi, tayamum) lewat bagan sederhana.",
+    mengaplikasi: "Murid mencocokkan keadaan (buang air, tidur nyenyak, junub, tidak ada air) dengan cara bersuci yang tepat.",
+    merefleksi: "Murid menyebutkan kebiasaan bersih yang akan ia lakukan hari ini.",
+    pemantik: "Mengapa kita harus suci sebelum beribadah?", exit: "1. Apa arti thaharah? 2. Sebutkan tiga cara bersuci.",
+    cinta: "Murid membiasakan hidup bersih sebagai wujud cinta kepada Allah dan diri sendiri.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid terbiasa mencuci tangan dan mandi setiap hari.", media: "bagan thaharah, kartu keadaan" },
+  { re: /rakaat|rakaat|salat (lima|fardu|wajib)|salat fardu|waktu salat|macam salat/i, topik: "salat lima waktu dan jumlah rakaatnya",
+    kisah: "Guru menceritakan peristiwa Isra Mikraj, saat Rasulullah SAW menerima perintah salat lima waktu langsung dari Allah.",
+    memahami: "Murid menyimak kisah, lalu menempel kartu waktu salat pada jam dinding: Subuh 2 rakaat, Zuhur 4, Asar 4, Magrib 3, Isya 4.",
+    mengaplikasi: "Dalam kelompok, murid bermain tebak kartu: guru menyebut waktu, kelompok menyebut nama salat dan jumlah rakaatnya, lalu menyusun jadwal salat harian.",
+    merefleksi: "Murid menyebutkan salat yang paling sulit dijaga dan cara agar tepat waktu.",
+    pemantik: "Apa saja salat yang kamu lakukan dalam sehari? Berapa rakaatnya?", exit: "1. Sebutkan lima salat wajib beserta jumlah rakaatnya. 2. Salat apa yang paling sedikit rakaatnya?",
+    cinta: "Murid berjanji menjaga salat tepat waktu sebagai cinta kepada Allah.", cintaIds: ["cinta_allah_rasul"],
+    awal: "Murid pernah melihat orang tua melaksanakan salat.", media: "jam dinding, kartu waktu salat" },
+  { re: /hukum taklifi|lima hukum|mubah|makruh/i, topik: "hukum taklifi",
+    kisah: "Guru menceritakan contoh kehidupan sehari-hari: salat itu wajib, salat dhuha sunah, makan dengan tangan kanan sunah, dan mencuri haram.",
+    memahami: "Murid mengenal lima hukum: wajib, sunah, mubah, makruh, dan haram dengan satu contoh untuk tiap hukum.",
+    mengaplikasi: "Murid memasukkan kartu perbuatan ke lima kotak hukum dalam permainan kelompok, lalu menjelaskan alasannya.",
+    merefleksi: "Murid menyebutkan satu perbuatan wajib dan satu perbuatan haram yang akan ia jaga.",
+    pemantik: "Apakah semua perbuatan hukumnya sama?", exit: "1. Sebutkan lima hukum dalam Islam. 2. Beri satu contoh perbuatan sunah.",
+    cinta: "Murid belajar menaati aturan Allah dengan senang hati.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid sudah mengenal perbuatan baik dan buruk.", media: "kartu perbuatan, lima kotak hukum" },
+  { re: /bacaan salat|gerakan salat|tata cara salat|rukun salat|syarat (sah )?salat|takbiratul|praktik salat|mempraktikkan salat/i, topik: "tata cara salat",
+    kisah: "Guru menyampaikan sabda Rasulullah SAW: \"Salatlah sebagaimana kamu melihat aku salat\" (HR. Bukhari).",
+    memahami: "Murid mengamati video/gambar urutan salat: berdiri, takbiratul ihram, membaca Al-Fatihah, rukuk, iktidal, sujud, duduk di antara dua sujud, tasyahud, salam.",
+    mengaplikasi: "Guru memberi contoh gerakan dan bacaan; murid berlatih berpasangan memakai ceklis urutan salat, bergantian sebagai pelaksana dan pengamat.",
+    merefleksi: "Murid menyebutkan gerakan atau bacaan yang masih sulit dan teman membantu memperbaikinya.",
+    pemantik: "Gerakan salat apa yang kamu hafal? Apa yang kamu baca ketika sujud?", exit: "1. Sebutkan tiga rukun salat. 2. Tuliskan bacaan saat rukuk.",
+    cinta: "Murid belajar salat dengan khusyuk dan tertib sebagai wujud cinta kepada Allah dan Rasul-Nya.", cintaIds: ["cinta_allah_rasul", "cinta_ilmu"],
+    awal: "Murid sudah bisa berwudu dan mengenal gerakan salat dasar.", media: "video/gambar urutan salat, ceklis salat" },
+  { re: /jamaah|jama'ah|imam|makmum/i, topik: "salat berjamaah",
+    kisah: "Guru menyampaikan sabda Rasulullah SAW bahwa salat berjamaah lebih utama 27 derajat daripada salat sendirian (HR. Bukhari dan Muslim).",
+    memahami: "Murid mengenal arti salat berjamaah, peran imam dan makmum, dan aturan dasar berdiri di dalam saf.",
+    mengaplikasi: "Murid bermain peran salat berjamaah di kelas: satu menjadi imam, yang lain makmum dengan saf lurus dan rapat.",
+    merefleksi: "Murid menyebutkan manfaat salat berjamaah bagi kebersamaan dan kedisiplinan.",
+    pemantik: "Apa yang kamu rasakan saat salat bersama-sama di masjid?", exit: "1. Apa tugas imam? 2. Sebutkan satu manfaat salat berjamaah.",
+    cinta: "Murid belajar kebersamaan, kerapian, dan saling menghormati dalam saf.", cintaIds: ["cinta_diri_sesama", "cinta_allah_rasul"],
+    awal: "Murid pernah melihat orang salat berjamaah.", media: "sajadah, gambar saf" },
+  { re: /jumat|jum'at/i, topik: "salat Jumat",
+    kisah: "Guru menyampaikan bahwa hari Jumat adalah hari yang utama dan salat Jumat wajib bagi laki-laki muslim yang baligh.",
+    memahami: "Murid mengenal ketentuan salat Jumat: jumlah rakaat (2), khotbah dua kali, dan adab menuju masjid.",
+    mengaplikasi: "Murid menyusun urutan kegiatan hari Jumat (mandi, berpakaian rapi, berangkat awal, mendengarkan khotbah, salat) dalam bentuk kartu.",
+    merefleksi: "Murid menyebutkan adab yang sudah dan belum ia lakukan pada hari Jumat.",
+    pemantik: "Apa yang biasa dilakukan ayah atau kakak laki-lakimu pada hari Jumat?", exit: "1. Berapa rakaat salat Jumat? 2. Sebutkan satu adab hari Jumat.",
+    cinta: "Murid membiasakan hari Jumat dengan kebersihan dan kebaikan.", cintaIds: ["cinta_allah_rasul"],
+    awal: "Murid mengenal salat berjamaah.", media: "kartu urutan kegiatan Jumat" },
+  { re: /sunah|sunnah|dhuha|tahajud|rawatib|tarawih/i, topik: "salat sunah",
+    kisah: "Guru menceritakan bahwa Rasulullah SAW rajin melaksanakan salat sunah sebagai tambahan kebaikan di samping salat wajib.",
+    memahami: "Murid mengenal beberapa salat sunah (rawatib, dhuha, tahajud, tarawih), waktunya, dan jumlah rakaatnya dengan tabel sederhana.",
+    mengaplikasi: "Murid mencocokkan nama salat sunah dengan waktunya dan menentukan satu salat sunah yang akan ia biasakan pekan ini.",
+    merefleksi: "Murid menyampaikan alasan memilih salat sunah tersebut.",
+    pemantik: "Selain salat lima waktu, salat apa lagi yang pernah kamu dengar?", exit: "1. Sebutkan dua salat sunah. 2. Kapan waktu salat dhuha?",
+    cinta: "Murid mendekatkan diri kepada Allah lewat ibadah sunah.", cintaIds: ["cinta_allah_rasul"],
+    awal: "Murid sudah mengenal salat wajib.", media: "tabel salat sunah" },
+  { re: /zikir|wirid|doa setelah salat/i, topik: "zikir dan doa setelah salat",
+    kisah: "Guru menyampaikan bahwa Rasulullah SAW berzikir dan berdoa setelah salat untuk mengingat Allah.",
+    memahami: "Murid menyimak dan menirukan bacaan istigfar, tasbih, tahmid, takbir, dan doa sesudah salat dengan arti singkatnya.",
+    mengaplikasi: "Murid berlatih berzikir 33 kali dengan jari atau tasbih bersama, bergantian memimpin.",
+    merefleksi: "Murid menyebutkan arti zikir yang paling ia sukai dan apa yang ia rasakan setelah berzikir.",
+    pemantik: "Apa yang kamu baca setelah selesai salat?", exit: "1. Tuliskan lafaz tasbih dan artinya. 2. Berapa kali zikir dibaca setelah salat?",
+    cinta: "Murid mengingat Allah dengan hati tenang dan bersyukur.", cintaIds: ["cinta_allah_rasul"],
+    awal: "Murid sudah bisa salat dan menghafal beberapa bacaan.", media: "kartu bacaan zikir" },
+  { re: /puasa|saum|sahur|ramadan|ramadhan/i, topik: "puasa Ramadan",
+    kisah: "Guru menceritakan kisah anak bernama Hamid yang belajar puasa pertama kali dan merasakan lapar, lalu mengerti arti sabar dan kepedulian kepada yang kekurangan.",
+    memahami: "Murid menyimak kisah, lalu mengenal ketentuan puasa: niat, menahan makan dan minum dari terbit fajar sampai Magrib, serta hal yang membatalkan puasa.",
+    mengaplikasi: "Murid mengelompokkan kartu perbuatan menjadi \"membatalkan puasa\" dan \"tidak membatalkan puasa\", lalu menyusun jadwal sahur dan berbuka sederhana.",
+    merefleksi: "Murid menuliskan satu kebaikan yang ingin ia lakukan selama Ramadan.",
+    pemantik: "Mengapa umat Islam berpuasa pada bulan Ramadan?", exit: "1. Sebutkan dua hal yang membatalkan puasa. 2. Kapan waktu berbuka puasa?",
+    cinta: "Murid belajar sabar, jujur, dan peduli kepada sesama yang kekurangan.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid pernah melihat keluarga berpuasa dan sahur.", media: "kartu perbuatan, gambar sahur dan berbuka" },
+  { re: /zakat|infak|infaq|sedekah|fitrah/i, topik: "zakat, infak, dan sedekah",
+    kisah: "Guru menceritakan kisah seorang anak yang berbagi bekalnya dengan temannya dan merasa bahagia, lalu mengaitkan dengan perintah zakat, infak, dan sedekah.",
+    memahami: "Murid mengenal arti zakat (fitrah dan mal), infak, dan sedekah, serta siapa saja yang berhak menerimanya.",
+    mengaplikasi: "Murid bermain peran: seorang menjadi pemberi dan seorang penerima, lalu mencocokkan contoh dengan jenis zakat, infak, atau sedekah.",
+    merefleksi: "Murid menyebutkan apa yang bisa ia sedekahkan pekan ini, tidak harus uang (senyum, tenaga, bantuan).",
+    pemantik: "Apa yang kamu rasakan jika bisa membantu orang lain?", exit: "1. Apa perbedaan zakat dan sedekah? 2. Zakat fitrah dibayarkan pada bulan apa?",
+    cinta: "Murid belajar peduli dan berbagi dengan sesama.", cintaIds: ["cinta_diri_sesama", "cinta_allah_rasul"],
+    awal: "Murid pernah memberi atau menerima bantuan.", media: "kartu kasus, celengan kelas" },
+  { re: /haji|umrah|ihram|kabah|ka'bah|manasik/i, topik: "haji",
+    kisah: "Guru menceritakan kisah Nabi Ibrahim AS dan Nabi Ismail AS membangun Kabah, lalu perintah haji bagi yang mampu.",
+    memahami: "Murid menyimak kisah dan mengenal tempat haji (Makkah, Arafah, Muzdalifah, Mina), dan rukun haji: ihram, wukuf, tawaf, sai, tahalul.",
+    mengaplikasi: "Murid mengikuti manasik haji sederhana di kelas: memakai kain ihram dari kertas, berjalan mengelilingi maket Kabah, dan menyebut talbiyah.",
+    merefleksi: "Murid menyebutkan pelajaran penting dari ibadah haji, misalnya persamaan derajat dan kesabaran.",
+    pemantik: "Siapa yang pernah mendengar orang pergi haji? Apa yang kamu ketahui?", exit: "1. Haji termasuk rukun Islam yang ke berapa? 2. Sebutkan dua rukun haji.",
+    cinta: "Murid belajar mengagumi ibadah haji dan persaudaraan umat Islam.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid mengenal Makkah dan Kabah.", media: "maket Kabah, kain/kertas ihram, video manasik" },
+  { re: /halal|haram|makanan|minuman/i, topik: "makanan dan minuman halal",
+    kisah: "Guru membacakan perintah Allah agar manusia makan makanan yang halal dan baik (QS. Al-Baqarah: 168).",
+    memahami: "Murid mengenal makanan dan minuman halal, haram, dan yang baik (thayyib) beserta contohnya, termasuk cara membaca label halal.",
+    mengaplikasi: "Murid memeriksa kemasan makanan (membawa dari rumah atau contoh) dan mengelompokkan kartu makanan ke kolom halal atau haram dengan alasan.",
+    merefleksi: "Murid menyebutkan kebiasaan makan yang baik: berdoa, tangan kanan, tidak berlebihan.",
+    pemantik: "Bagaimana kita tahu makanan itu halal?", exit: "1. Sebutkan dua contoh makanan haram. 2. Apa arti thayyib?",
+    cinta: "Murid menjaga diri dengan makanan halal dan baik.", cintaIds: ["cinta_diri_sesama", "cinta_allah_rasul"],
+    awal: "Murid sudah terbiasa berdoa sebelum makan.", media: "kemasan makanan, kartu halal/haram" },
+  { re: /kurban|qurban|akikah|aqiqah|idul adha|idul fitri|hari raya/i, topik: "kurban dan hari raya",
+    kisah: "Guru menceritakan kisah Nabi Ibrahim AS dan Nabi Ismail AS yang ikhlas menaati perintah Allah sehingga Ismail diganti dengan seekor kambing.",
+    memahami: "Murid mengenal hukum kurban, hewan yang boleh dikurbankan, waktu penyembelihan, dan pembagian dagingnya.",
+    mengaplikasi: "Murid membuat bagan pembagian daging kurban (untuk diri, tetangga, dan fakir miskin) dan menyusun urutan kegiatan Idul Adha.",
+    merefleksi: "Murid menyebutkan pelajaran keikhlasan dari kisah Nabi Ibrahim dan Ismail.",
+    pemantik: "Apa yang kamu lakukan pada hari raya Idul Adha?", exit: "1. Siapa yang pertama kali berkurban? 2. Kepada siapa daging kurban dibagikan?",
+    cinta: "Murid belajar ikhlas dan berbagi.", cintaIds: ["cinta_allah_rasul", "cinta_diri_sesama"],
+    awal: "Murid pernah melihat penyembelihan kurban atau pembagian daging.", media: "gambar kurban, bagan pembagian" },
+  { re: /jenazah|mengurus|takziah|ta'ziyah/i, topik: "mengurus jenazah",
+    kisah: "Guru menyampaikan bahwa mengurus jenazah termasuk kewajiban kolektif umat Islam (fardu kifayah) dan menunjukkan akhlak mulia.",
+    memahami: "Murid mengenal empat kewajiban kepada jenazah muslim: memandikan, mengafani, menyalatkan, dan menguburkan.",
+    mengaplikasi: "Murid menyusun kartu urutan pengurusan jenazah dan menyebut siapa yang menanggung kewajiban ini.",
+    merefleksi: "Murid menyampaikan pesan tentang pentingnya mengingat kematian dan berbuat baik.",
+    pemantik: "Apa yang kita lakukan jika ada tetangga yang meninggal dunia?", exit: "1. Sebutkan empat kewajiban terhadap jenazah. 2. Apa arti fardu kifayah?",
+    cinta: "Murid belajar peduli dan empati kepada keluarga yang berduka.", cintaIds: ["cinta_diri_sesama"],
+    awal: "Murid mengenal ibadah dan kehidupan setelah mati secara sederhana.", media: "kartu urutan" },
+  { re: /masjid/i, topik: "adab di masjid",
+    kisah: "Guru menceritakan bahwa masjid adalah rumah Allah yang harus dijaga kebersihan dan ketenangannya.",
+    memahami: "Murid mengenal adab masuk masjid (kaki kanan, berdoa, salat tahiyatul masjid), dan adab selama di dalam masjid.",
+    mengaplikasi: "Murid memperagakan adab masuk dan keluar masjid, lalu mengelompokkan kartu perilaku baik dan kurang baik di masjid.",
+    merefleksi: "Murid berjanji menjaga ketenangan dan kebersihan masjid.",
+    pemantik: "Apa yang kamu lakukan saat masuk masjid?", exit: "1. Sebutkan dua adab masuk masjid. 2. Mengapa tidak boleh berlari di masjid?",
+    cinta: "Murid mencintai masjid dan menjaga kebersihannya.", cintaIds: ["cinta_allah_rasul", "cinta_lingkungan"],
+    awal: "Murid pernah ke masjid.", media: "gambar masjid, kartu perilaku" },
+  { re: /jual beli|pinjam|utang|muamalah|akad/i, topik: "jual beli dan muamalah",
+    kisah: "Guru menceritakan kejujuran Rasulullah SAW sebagai pedagang yang digelari Al-Amin (yang dapat dipercaya).",
+    memahami: "Murid mengenal rukun dan syarat jual beli sederhana: penjual, pembeli, barang, harga, dan ijab kabul, serta sikap jujur.",
+    mengaplikasi: "Murid bermain peran pasar mini di kelas dengan uang mainan, mempraktikkan tawar-menawar sopan dan jujur.",
+    merefleksi: "Murid menyebutkan contoh perilaku jujur dan tidak jujur dalam berdagang.",
+    pemantik: "Pernahkah kamu membeli sesuatu di kantin? Bagaimana caranya?", exit: "1. Sebutkan rukun jual beli. 2. Mengapa pedagang harus jujur?",
+    cinta: "Murid belajar jujur dan adil kepada sesama.", cintaIds: ["cinta_diri_sesama"],
+    awal: "Murid pernah berbelanja.", media: "uang mainan, barang dagangan" }
+];
+function _cariBankFikih(teks) {
+  const t = String(teks || "");
+  let umum = null;
+  for (let i = 0; i < _BANK_FIKIH.length; i++) {
+    if (_BANK_FIKIH[i].topik === "thaharah (bersuci)") { umum = _BANK_FIKIH[i]; continue; }
+    if (_BANK_FIKIH[i].re.test(t)) return _BANK_FIKIH[i];
+  }
+  return umum && umum.re.test(t) ? umum : null;
+}
+
 // ===== Penyusun draf Modul Ajar (offline, tanpa AI berbayar) =====
 function _kosongMA(v) {
   if (Array.isArray(v)) return v.length === 0;
@@ -17453,9 +17642,17 @@ function _ringkasIndikator(teks) {
 }
 function _fokusIndikator(teks) {
   const s = _ringkasIndikator(teks);
-  const m = s.match(/^(\S+)\s+(.+)$/);
-  const objek = m ? m[2] : s || "materi";
-  return { fokus: objek, objek: objek, kerja: m ? m[1] : "" };
+  // buang satu atau dua kata kerja di depan ("Mengidentifikasi dan membedakan ...")
+  const m = s.match(/^\S+(?:\s+(?:dan|serta|atau)\s+\S+)?\s+(.+)$/);
+  let objek = m ? m[1] : s || "materi";
+  objek = objek.replace(/\s*;\s*.*$/, "");
+  const kataObjek = objek.split(/\s+/);
+  if (kataObjek.length > 14) objek = kataObjek.slice(0, 14).join(" ");
+  // judul pendek: potong pada kata sambung dan batasi 8 kata
+  let fokus = objek.replace(/\s+(melalui|secara|dengan|berdasarkan|pada|dalam|untuk|sesuai|yang|serta|sehingga)\s.*$/i, "");
+  const kf = fokus.split(/\s+/);
+  if (kf.length > 8) fokus = kf.slice(0, 8).join(" ");
+  return { fokus: fokus || objek, objek: objek, kerja: "" };
 }
 function _modelDariTP(teks) {
   const t = String(teks || "").toLowerCase();
@@ -17541,6 +17738,12 @@ function _menit(jp, bagian) {
   const inti = total - awal - penutup;
   return { awal, penutup, memahami: Math.round(inti * 0.30 / 5) * 5, mengaplikasi: Math.round(inti * 0.45 / 5) * 5, merefleksi: inti - Math.round(inti * 0.30 / 5) * 5 - Math.round(inti * 0.45 / 5) * 5 }[bagian];
 }
+function _grupIndikator(inds, n, idx, tpTeks) {
+  if (!inds || inds.length === 0) return [{ text: tpTeks }];
+  const a = Math.floor(idx * inds.length / n);
+  const b = Math.max(a + 1, Math.floor((idx + 1) * inds.length / n));
+  return inds.slice(a, b);
+}
 function susunDraftModul(tpRow, ma0, konteks, opsi) {
   const timpa = !!(opsi && opsi.timpa);
   const k = konteks || {};
@@ -17558,12 +17761,7 @@ function susunDraftModul(tpRow, ma0, konteks, opsi) {
   const keluarga = _keluargaModel(ma.modelPembelajaran);
   const n = (ma.pertemuan || []).length || 1;
   // distribusi indikator ke pertemuan
-  const bagi = (idx) => {
-    if (inds.length === 0) return [{ text: tpTeks }];
-    const a = Math.floor(idx * inds.length / n);
-    const b = Math.max(a + 1, Math.floor((idx + 1) * inds.length / n));
-    return inds.slice(a, b);
-  };
+  const bagi = (idx) => _grupIndikator(inds, n, idx, tpTeks);
   const metodeKBC = (METODE_PERTEMUAN || []).filter((m) => /KBC/.test(m));
   const metodeUmum = ["Diskusi Kelompok", "Think-Pair-Share", "Ceramah & Tanya Jawab", "Demonstrasi", "Gallery Walk"]
     .map((x) => METODE_PERTEMUAN.find((m) => m.indexOf(x) === 0)).filter(Boolean);
@@ -17573,6 +17771,7 @@ function susunDraftModul(tpRow, ma0, konteks, opsi) {
   const pertemuan = (ma.pertemuan || []).map((p, i) => {
     const grp = bagi(i);
     const f = _fokusIndikator(grp.map((g) => g.text).join("; "));
+    const bf = k.mapelId === "fikih" ? _cariBankFikih(grp.map((g2) => g2.text).join(" ")) : null;
     const v = { fokus: f.fokus, objek: f.objek, media: "gambar/video/contoh nyata", kelompok: "kelompok kecil (3-4 murid)" };
     const set = _FASE_INTI[keluarga] || _FASE_INTI.umum;
     const t = set[i % set.length];
@@ -17583,35 +17782,36 @@ function susunDraftModul(tpRow, ma0, konteks, opsi) {
     const mA = _menit(jp, "awal"), mP = _menit(jp, "penutup");
     q.judul = jaga ? p.judul : pakai(p.judul && !/^Pertemuan ke-\d+$/.test(p.judul) ? p.judul : "", "Pertemuan ke-" + (i + 1) + ": " + f.fokus.charAt(0).toUpperCase() + f.fokus.slice(1));
     q.metodePertemuan = pakaiT(p.metodePertemuan, (k.isMadrasah && metodeKBC.length ? metodeKBC[i % metodeKBC.length] : metodeUmum[i % Math.max(1, metodeUmum.length)] || METODE_PERTEMUAN[0]));
-    q.kegiatanAwal = pakaiT(p.kegiatanAwal, "(" + mA + " menit) " + _PEMBUKA[i % _PEMBUKA.length] + " Apersepsi: guru mengajukan pertanyaan pemantik tentang " + f.fokus + ".");
-    q.kegiatanIntiMemahami = pakaiT(p.kegiatanIntiMemahami, "(" + _menit(jp, "memahami") + " menit) " + _isiTemplat(t[0], v));
-    q.kegiatanIntiMengaplikasi = pakaiT(p.kegiatanIntiMengaplikasi, "(" + _menit(jp, "mengaplikasi") + " menit) " + _isiTemplat(t[1], v));
-    q.kegiatanIntiMerefleksi = pakaiT(p.kegiatanIntiMerefleksi, "(" + _menit(jp, "merefleksi") + " menit) " + _isiTemplat(t[2], v));
+    q.kegiatanAwal = pakaiT(p.kegiatanAwal, "(" + mA + " menit) " + _PEMBUKA[i % _PEMBUKA.length] + " Apersepsi: " + (bf ? "guru bertanya, \"" + bf.pemantik + "\"" : "guru mengajukan pertanyaan pemantik tentang " + f.fokus) + ".");
+    q.kegiatanIntiMemahami = pakaiT(p.kegiatanIntiMemahami, "(" + _menit(jp, "memahami") + " menit) " + (bf ? bf.kisah + " " + bf.memahami : _isiTemplat(t[0], v)));
+    q.kegiatanIntiMengaplikasi = pakaiT(p.kegiatanIntiMengaplikasi, "(" + _menit(jp, "mengaplikasi") + " menit) " + (bf ? bf.mengaplikasi : _isiTemplat(t[1], v)));
+    q.kegiatanIntiMerefleksi = pakaiT(p.kegiatanIntiMerefleksi, "(" + _menit(jp, "merefleksi") + " menit) " + (bf ? bf.merefleksi : _isiTemplat(t[2], v)));
     q.kegiatanPenutup = pakai(p.kegiatanPenutup, "(" + mP + " menit) Murid dan guru menyimpulkan pelajaran, murid mengisi exit ticket, guru menyampaikan rencana pertemuan berikutnya, lalu berdoa dan salam penutup.");
-    q.exitTicket = pakaiT(p.exitTicket, "Tuliskan satu hal baru yang kamu pelajari tentang " + f.fokus + " dan satu hal yang masih ingin kamu tanyakan.");
+    q.exitTicket = pakaiT(p.exitTicket, bf ? bf.exit : "Tuliskan satu hal baru yang kamu pelajari tentang " + f.fokus + " dan satu hal yang masih ingin kamu tanyakan.");
     q.berkesadaran = pakai(p.berkesadaran, _BERKESADARAN[i % 3]);
     q.bermakna = pakai(p.bermakna, _BERMAKNA[i % 3]);
     q.menggembirakan = pakai(p.menggembirakan, _MENGGEMBIRAKAN[i % 3]);
     if (k.isMadrasah) {
-      q.pancaCinta = pakaiT(p.pancaCinta, cintaIds.slice(0, 2));
-      q.bentukPenerapanCinta = pakaiT(p.bentukPenerapanCinta, "Murid membiasakan adab belajar, saling menghargai, dan bersyukur atas ilmu saat mempelajari " + f.fokus + ".");
+      q.pancaCinta = pakaiT(p.pancaCinta, bf ? bf.cintaIds : cintaIds.slice(0, 2));
+      q.bentukPenerapanCinta = pakaiT(p.bentukPenerapanCinta, bf ? bf.cinta : "Murid membiasakan adab belajar, saling menghargai, dan bersyukur atas ilmu saat mempelajari " + f.fokus + ".");
     }
     return q;
   });
   ma.pertemuan = pertemuan;
+  const bf0 = k.mapelId === "fikih" ? _cariBankFikih(_grupIndikator(inds, n, 0, tpTeks).map((g2) => g2.text).join(" ")) : null;
   const f0 = _fokusIndikator(inds[0] ? inds[0].text : tpTeks);
   ma.profilPelajar = pakai(ma.profilPelajar, DIMENSI_PROFIL_LULUSAN.filter((d) => /Penalaran|Kolaborasi|Keimanan|Komunikasi/.test(d)).slice(0, 3));
   ma.asesmenAwalStrategi = pakai(ma.asesmenAwalStrategi, "Tanya jawab singkat dan kuis lisan untuk mengetahui pengetahuan awal murid tentang " + f0.fokus + ".");
   ma.asesmenAwalTindakLanjut = pakai(ma.asesmenAwalTindakLanjut, "Murid yang belum paham dibimbing dengan penjelasan ulang dan contoh sederhana; murid yang sudah paham diberi tantangan pengayaan.");
-  ma.kompetensiAwal = pakai(ma.kompetensiAwal, "Murid telah memiliki pengetahuan dasar yang berkaitan dengan " + (tpRow.babJudul || namaMapel) + " dari pembelajaran sebelumnya.");
+  ma.kompetensiAwal = pakai(ma.kompetensiAwal, bf0 ? bf0.awal : "Murid telah memiliki pengetahuan dasar yang berkaitan dengan " + (tpRow.babJudul || namaMapel) + " dari pembelajaran sebelumnya.");
   ma.pemahamanBermakna = pakai(ma.pemahamanBermakna, "Dengan memahami " + f0.fokus + ", murid dapat menerapkannya dalam kehidupan sehari-hari dengan benar dan penuh tanggung jawab.");
-  ma.pertanyaanPemantik = pakai(ma.pertanyaanPemantik, "Apa yang kamu ketahui tentang " + f0.fokus + "?\nBagaimana manfaatnya bagi kehidupanmu sehari-hari?");
+  ma.pertanyaanPemantik = pakai(ma.pertanyaanPemantik, bf0 ? bf0.pemantik : "Apa yang kamu ketahui tentang " + f0.fokus + "?\nBagaimana manfaatnya bagi kehidupanmu sehari-hari?");
   ma.metode = pakai(ma.metode, "Diskusi, tanya jawab, penugasan, dan demonstrasi.");
   ma.kemitraan = pakai(ma.kemitraan, "Guru bekerja sama dengan orang tua untuk mendampingi murid mengulang pelajaran di rumah.");
   ma.lingkunganFisik = pakai(ma.lingkunganFisik, "Ruang kelas yang tertata, kursi dapat dikelompokkan, tersedia sudut baca.");
   ma.lingkunganVirtual = pakai(ma.lingkunganVirtual, "Grup kelas untuk berbagi materi dan tugas (opsional).");
   ma.pemanfaatanDigital = pakai(ma.pemanfaatanDigital, "Proyektor/gawai untuk menayangkan gambar atau video pendukung materi.");
-  ma.saranaPrasarana = pakai(ma.saranaPrasarana, /arab|quran|hadis|fikih|akidah|ski/i.test((k.mapelId || "") + namaMapel) ? "Buku paket, papan tulis, Al-Qur'an/kartu bacaan, gambar pendukung, lembar kerja." : "Buku paket, papan tulis, media gambar/benda konkret, lembar kerja.");
+  ma.saranaPrasarana = pakai(ma.saranaPrasarana, bf0 ? "Buku paket Fikih, papan tulis, " + bf0.media + ", lembar kerja." : /arab|quran|hadis|fikih|akidah|ski/i.test((k.mapelId || "") + namaMapel) ? "Buku paket, papan tulis, Al-Qur'an/kartu bacaan, gambar pendukung, lembar kerja." : "Buku paket, papan tulis, media gambar/benda konkret, lembar kerja.");
   ma.bentukAsesmen = pakai(ma.bentukAsesmen, /praktik|mempraktikkan|melaksanakan|membuat|menyusun|menulis|melafalkan/i.test(tpTeks) ? ["Unjuk Kerja/Praktik", "Observasi/Catatan Anekdot", "Tes Lisan"] : ["Tes Tertulis (pilihan ganda/uraian)", "Observasi/Catatan Anekdot", "Tes Lisan"]);
   ma.asesmenFormatif = pakai(ma.asesmenFormatif, "Observasi keaktifan, tanya jawab, dan exit ticket pada setiap pertemuan; umpan balik diberikan langsung.");
   ma.asesmenSumatif = pakai(ma.asesmenSumatif, "Tes akhir TP (tertulis/lisan/praktik) untuk mengukur ketercapaian: " + tpTeks);
@@ -17640,12 +17840,35 @@ function statusModulAjar(ma) {
   return adaApa ? "draf" : "belum";
 }
 
+function periksaKesesuaian(ma, inds, tpTeks) {
+  const n = (ma.pertemuan || []).length;
+  if (!inds || inds.length < 2 || n < 2) return [];
+  const STOP = /^(dengan|yang|dan|atau|untuk|dalam|dari|pada|agar|sebagai|sehingga|murid|guru|peserta|didik|menjelaskan|menyebutkan|mempraktikkan|membedakan|mengidentifikasi|memahami|dapat|benar|jelas|kegiatan|pertemuan|siswa|bersama|tentang|setiap|lalu|kemudian|setelah|mereka|kelompok|menit)$/;
+  const kata = (s) => (String(s || "").toLowerCase().match(/[a-z']{4,}/g) || []).filter((w) => !STOP.test(w));
+  const kunci = Array.from({ length: n }, (_, i) => new Set(_grupIndikator(inds, n, i, tpTeks).flatMap((x) => kata(x.text))));
+  const unik = kunci.map((ks, i) => new Set([...ks].filter((w) => !kunci.some((o, j) => j !== i && o.has(w)))));
+  const out = [];
+  ma.pertemuan.forEach((p, i) => {
+    const teks = [p.kegiatanAwal, p.kegiatanIntiMemahami, p.kegiatanIntiMengaplikasi, p.kegiatanIntiMerefleksi].join(" ");
+    if (teks.trim().length < 60) return;
+    const kt = new Set(kata(teks));
+    const skor = unik.map((ks) => { let c = 0; ks.forEach((w) => { if (kt.has(w)) c++; }); return c; });
+    let best = -1, bi = -1;
+    skor.forEach((s, j) => { if (s > best) { best = s; bi = j; } });
+    if (bi !== i && best >= 3 && best >= skor[i] + 3) out.push({ idx: i, seharusnya: bi });
+  });
+  return out;
+}
+
 function LipatMA({ judul, hint, children }) {
   return React.createElement("details", { style: { border: "1px solid #d8dee8", borderRadius: 10, padding: "8px 12px", margin: "10px 0", background: "#fafbfc" } }, React.createElement("summary", { style: { cursor: "pointer", fontWeight: 600, fontSize: 12.5, color: "#1a2b4a" } }, judul, hint ? React.createElement("span", { style: { fontWeight: 400, color: "#6b7280", marginLeft: 8, fontSize: 11 } }, hint) : null), React.createElement("div", { style: { marginTop: 10 } }, React.Children.toArray(children)));
 }
 function buildPromptModulAjar(tpRow, ma, mapel2, identitas2, isMadrasah) {
   const indikatorList = (tpRow.indikator || []).map((ind) => `- ${ind.kode} ${ind.text}`).join("\n");
   const jumlahPertemuan = ma.pertemuan.length;
+  const _indList = tpRow.indikator || [];
+  const pemetaanIndikator = Array.from({ length: jumlahPertemuan }, (_, i) => "Pertemuan " + (i + 1) + ": " + _grupIndikator(_indList, jumlahPertemuan, i, tpRow.text).map((x) => (x.kode ? x.kode + " " : "") + x.text).join("; ")).join("\n");
+  const petunjukFikih = /fikih/i.test(String(mapel2.nama || "")) ? "\n- Karena ini mapel Fikih: sertakan dalil singkat (ayat atau hadis lengkap dengan rujukan) bila relevan, contoh praktik ibadah yang bisa dilakukan murid, dan kisah teladan Nabi atau sahabat yang singkat." : "";
   const pancaCintaInstruksi = isMadrasah ? `
 Madrasah ini menerapkan Kurikulum Berbasis Cinta (KMA Nomor 1503 Tahun 2025) dengan lima topik "Panca Cinta": Cinta kepada Allah dan Rasul-Nya, Cinta Ilmu, Cinta Lingkungan, Cinta Diri dan Sesama Manusia, Cinta Tanah Air. Untuk SETIAP pertemuan, sisipkan integrasi salah satu atau lebih topik cinta yang relevan secara alami pada kegiatan awal atau penutup (misalnya lewat apersepsi, pesan moral, atau refleksi singkat), dan sebutkan topik yang dipakai serta bentuk penerapannya secara eksplisit menggunakan format [PERTEMUAN_N_TEMA_CINTA] dan [PERTEMUAN_N_BENTUK_CINTA] di bawah.` : "";
   const daftarDimensi = DIMENSI_PROFIL_LULUSAN.map((d) => `"${d}"`).join(", ");
@@ -17695,6 +17918,15 @@ Tujuan Pembelajaran (${tpRow.kode}): ${tpRow.text}
 
 Indikator Tujuan Pembelajaran:
 ${indikatorList || "(tidak ada indikator spesifik, ikuti rumusan TP)"}
+
+PEMETAAN MATERI PER PERTEMUAN (WAJIB DIIKUTI, URUTAN TIDAK BOLEH DITUKAR):
+${pemetaanIndikator}
+Setiap pertemuan HANYA membahas materi yang ditetapkan untuknya di atas. Jangan memindahkan materi ke pertemuan lain, jangan menggeser urutan, dan jangan menambah topik di luar indikator. Judul pertemuan harus sama dengan materinya.
+
+KUALITAS ISI (WAJIB):
+- Tulis langkah yang KONKRET dan bisa langsung dilaksanakan guru: sertakan contoh kalimat/ucapan guru, pertanyaan nyata, contoh kasus atau kisah singkat, dan contoh soal, bukan kalimat umum.
+- Setiap kegiatan menyebut aktivitas murid yang jelas dan perkiraan waktu (menit).
+- Bahasa sesuai usia kelas ${tpRow.kelas}.${petunjukFikih}
 ${pancaCintaInstruksi}
 
 ${fasePetunjuk}
@@ -17729,7 +17961,7 @@ ${Array.from({ length: jumlahPertemuan }, (_, i) => {
     const metodeKet = aiM ? "metode [METODE_TEMU_" + (i + 1) + "] di atas" : mTP;
     const awalKet = aiM ? "" : ", metode: " + mTP;
     const n = i + 1;
-    return metodeTag + "[PERTEMUAN_" + n + "_AWAL]\n(kegiatan awal pertemuan ke-" + n + awalKet + "; singkat konkret \u2014 salam+doa, presensi, apersepsi, pertanyaan pemantik, sampaikan tujuan)\n\n[PERTEMUAN_" + n + "_MEMAHAMI]\n(fase MEMAHAMI pertemuan ke-" + n + " \u2014 Model: " + modelUntukPrompt + ", Metode: " + metodeKet + " | Fase pengenalan topik/stimulasi/orientasi masalah; langkah bernomor)\n\n[PERTEMUAN_" + n + "_MENGAPLIKASI]\n(fase MENGAPLIKASI pertemuan ke-" + n + " \u2014 eksplorasi/investigasi/kerja kelompok/pengumpulan data sesuai model; langkah bernomor)\n\n[PERTEMUAN_" + n + "_MEREFLEKSI]\n(fase MEREFLEKSI pertemuan ke-" + n + " \u2014 presentasi hasil/verifikasi/evaluasi/refleksi sesuai model; langkah bernomor)\n\n[PERTEMUAN_" + n + "_PENUTUP]\n(kegiatan penutup pertemuan ke-" + n + " \u2014 penguatan+simpulan bersama murid, info kegiatan selanjutnya, syukur+salam; TANPA exit ticket)\n\n[PERTEMUAN_" + n + "_EXIT_TICKET]\n(buat 1-2 pertanyaan Exit Ticket untuk pertemuan ke-" + n + " yang KONKRET dan bisa dijawab singkat dalam 2-3 menit; pertanyaan mengukur pemahaman utama materi pertemuan ini; contoh: '1. Sebutkan ... 2. Jelaskan dengan kata-katamu sendiri ...')\n\n[PERTEMUAN_" + n + "_BERKESADARAN]\n(prinsip Berkesadaran pada pertemuan ke-" + n + ": murid sadar tujuan dan proses belajarnya)\n\n[PERTEMUAN_" + n + "_BERMAKNA]\n(prinsip Bermakna pada pertemuan ke-" + n + ": relevansi dan manfaat nyata materi)\n\n[PERTEMUAN_" + n + "_MENGGEMBIRAKAN]\n(prinsip Menggembirakan pada pertemuan ke-" + n + ": suasana positif dan menyenangkan)\n" + (isMadrasah ? "\n[PERTEMUAN_" + n + "_TEMA_CINTA]\n(1 tema Panca Cinta yang relevan di pertemuan ini)\n\n[PERTEMUAN_" + n + "_BENTUK_CINTA]\n(bentuk penerapan singkat tema cinta tersebut)\n" : "");
+    return "[PERTEMUAN_" + n + "_JUDUL]\n(judul pertemuan ke-" + n + ", 3-8 kata, SESUAI materi pada PEMETAAN di atas)\n\n" + metodeTag + "[PERTEMUAN_" + n + "_AWAL]\n(kegiatan awal pertemuan ke-" + n + awalKet + "; singkat konkret \u2014 salam+doa, presensi, apersepsi, pertanyaan pemantik, sampaikan tujuan)\n\n[PERTEMUAN_" + n + "_MEMAHAMI]\n(fase MEMAHAMI pertemuan ke-" + n + " \u2014 Model: " + modelUntukPrompt + ", Metode: " + metodeKet + " | Fase pengenalan topik/stimulasi/orientasi masalah; langkah bernomor)\n\n[PERTEMUAN_" + n + "_MENGAPLIKASI]\n(fase MENGAPLIKASI pertemuan ke-" + n + " \u2014 eksplorasi/investigasi/kerja kelompok/pengumpulan data sesuai model; langkah bernomor)\n\n[PERTEMUAN_" + n + "_MEREFLEKSI]\n(fase MEREFLEKSI pertemuan ke-" + n + " \u2014 presentasi hasil/verifikasi/evaluasi/refleksi sesuai model; langkah bernomor)\n\n[PERTEMUAN_" + n + "_PENUTUP]\n(kegiatan penutup pertemuan ke-" + n + " \u2014 penguatan+simpulan bersama murid, info kegiatan selanjutnya, syukur+salam; TANPA exit ticket)\n\n[PERTEMUAN_" + n + "_EXIT_TICKET]\n(buat 1-2 pertanyaan Exit Ticket untuk pertemuan ke-" + n + " yang KONKRET dan bisa dijawab singkat dalam 2-3 menit; pertanyaan mengukur pemahaman utama materi pertemuan ini; contoh: '1. Sebutkan ... 2. Jelaskan dengan kata-katamu sendiri ...')\n\n[PERTEMUAN_" + n + "_BERKESADARAN]\n(prinsip Berkesadaran pada pertemuan ke-" + n + ": murid sadar tujuan dan proses belajarnya)\n\n[PERTEMUAN_" + n + "_BERMAKNA]\n(prinsip Bermakna pada pertemuan ke-" + n + ": relevansi dan manfaat nyata materi)\n\n[PERTEMUAN_" + n + "_MENGGEMBIRAKAN]\n(prinsip Menggembirakan pada pertemuan ke-" + n + ": suasana positif dan menyenangkan)\n" + (isMadrasah ? "\n[PERTEMUAN_" + n + "_TEMA_CINTA]\n(1 tema Panca Cinta yang relevan di pertemuan ini)\n\n[PERTEMUAN_" + n + "_BENTUK_CINTA]\n(bentuk penerapan singkat tema cinta tersebut)\n" : "");
   }).join("\n")}
 [BENTUK_ASESMEN]
 (pilih 1-3 bentuk asesmen yang paling sesuai untuk TP ini, PERSIS dari daftar berikut dan pisahkan dengan koma, tanpa kalimat tambahan: ${daftarAsesmen})
@@ -17818,7 +18050,7 @@ function parseHasilAI(teks, jumlahPertemuan) {
     const label = m[1].trim();
     const isi = m[2].trim();
     if (!isi) continue;
-    const pertemuanMatch = label.match(/^PERTEMUAN_(\d+)_(AWAL|MEMAHAMI|MENGAPLIKASI|MEREFLEKSI|INTI|PENUTUP|EXIT_TICKET|TEMA_CINTA|BENTUK_CINTA|BERKESADARAN|BERMAKNA|MENGGEMBIRAKAN)$/);
+    const pertemuanMatch = label.match(/^PERTEMUAN_(\d+)_(JUDUL|AWAL|MEMAHAMI|MENGAPLIKASI|MEREFLEKSI|INTI|PENUTUP|EXIT_TICKET|TEMA_CINTA|BENTUK_CINTA|BERKESADARAN|BERMAKNA|MENGGEMBIRAKAN)$/);
     const metodeTMatch = label.match(/^METODE_TEMU_(\d+)$/);
     if (metodeTMatch) {
       const idx = Number(metodeTMatch[1]) - 1;
@@ -17830,7 +18062,13 @@ function parseHasilAI(teks, jumlahPertemuan) {
       const idx = Number(pertemuanMatch[1]) - 1;
       if (idx < 0 || idx >= jumlahPertemuan) continue;
       const jenis = pertemuanMatch[2];
-      if (jenis === "AWAL") {
+      if (jenis === "JUDUL") {
+        const jd = isi.split("\n")[0].trim().replace(/^Pertemuan\s*(ke-?)?\s*\d+\s*[:\-\u2013]?\s*/i, "");
+        if (jd) {
+          data.pertemuan[idx].judul = "Pertemuan ke-" + (idx + 1) + ": " + jd;
+          jumlahTerisi++;
+        }
+      } else if (jenis === "AWAL") {
         data.pertemuan[idx].kegiatanAwal = isi;
         jumlahTerisi++;
       } else if (jenis === "MEMAHAMI") {
@@ -18087,6 +18325,7 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
     ma.pertemuan.every((x) => String(x.kegiatanAwal || "").trim() && (String(x.kegiatanIntiMemahami || "").trim() || String(x.kegiatanIntiMengaplikasi || "").trim()) && String(x.kegiatanPenutup || "").trim()),
     (ma.bentukAsesmen || []).length > 0 && String(ma.asesmenFormatif || "").trim() !== ""
   ];
+  const ma_beda = periksaKesesuaian(ma, tpRow.indikator, tpRow.text);
   const ma_namaLangkah = ["Dasar", "Susun draf", "Periksa", "Asesmen & cetak"];
   const susunOtomatis = (timpa) => {
     if (timpa && !window.confirm("Susun ulang akan MENIMPA semua isian kegiatan dan asesmen yang sudah Anda tulis pada TP ini. Lanjutkan?")) return;
@@ -18359,6 +18598,7 @@ Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
       "\u2715 Bersihkan Kotak AI"
     ), statusTerap && (statusTerap.berhasil ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "#1c7c3d", fontWeight: 600 } }, "\u2713 ", statusTerap.jumlahTerisi, " bagian berhasil diterapkan.") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "#92660a", fontWeight: 600 } }, "\u26A0 Format tidak terbaca otomatis. Salin manual.")))))))),
     langkah === 3 && /* @__PURE__ */ React.createElement("div", null,
+      ma_beda.length > 0 && /* @__PURE__ */ React.createElement("div", { "data-peringatan-isi": "true", style: { background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 10, padding: "10px 12px", marginBottom: 10, fontSize: 12, color: "#78350f", lineHeight: 1.5 } }, "\u26A0 Isi beberapa pertemuan tampaknya tidak sesuai urutan indikator: ", ma_beda.map((x) => "Pertemuan " + (x.idx + 1) + " (isinya mirip materi Pertemuan " + (x.seharusnya + 1) + ")").join("; "), ". Periksa judul dan isinya. Jika ingin mengulang dari dasar, buka Langkah 2 lalu klik \u201CKosongkan modul TP ini\u201D dan Susun otomatis."),
       /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280", marginBottom: 10 } }, ma.pertemuan.length, " pertemuan \xD7 ", ma.jpPerPertemuan, " JP — ", _kosongMA(ma.modelPembelajaran) ? "model belum dipilih (klik Susun otomatis di Langkah 2)" : ma.modelPembelajaran, ". Buka satu pertemuan untuk memeriksa."),
       ma.pertemuan.map((p, idx) => {
         const buka = pertemuanBuka === idx;
