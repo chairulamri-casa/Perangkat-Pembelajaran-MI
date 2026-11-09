@@ -10646,6 +10646,7 @@ function AuthGate() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showRosterPanel, setShowRosterPanel] = useState(false);
   const [showImportRombelPanel, setShowImportRombelPanel] = useState(false);
+  const [menuAdminOpen, setMenuAdminOpen] = useState(false);
   React.useEffect(() => {
     getSupabase().then(setSupabase);
   }, []);
@@ -10678,28 +10679,7 @@ function AuthGate() {
     return /* @__PURE__ */ React.createElement(PendingApprovalScreen, { profile, onLogout: () => supabase.auth.signOut() });
   }
   const isAdmin = profile.role === "admin_madrasah" || profile.role === "admin";
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, isAdmin && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", top: 10, right: 10, zIndex: 900, display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setShowImportRombelPanel(true),
-      style: { padding: "6px 12px", borderRadius: 20, border: "1px solid #2c4a78", background: "#16233a", color: "#8fa3c4", fontSize: 11.5, cursor: "pointer" }
-    },
-    "\u{1F4CA} Import Rombel & Siswa"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setShowRosterPanel(true),
-      style: { padding: "6px 12px", borderRadius: 20, border: "1px solid #2c4a78", background: "#16233a", color: "#8fa3c4", fontSize: 11.5, cursor: "pointer" }
-    },
-    "\u{1F4CB} Daftarkan Guru"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setShowAdminPanel(true),
-      style: { padding: "6px 12px", borderRadius: 20, border: "1px solid #2c4a78", background: "#16233a", color: "#8fa3c4", fontSize: 11.5, cursor: "pointer" }
-    },
-    "\u{1F464} Persetujuan Akun"
-  )), showAdminPanel && /* @__PURE__ */ React.createElement(AdminApprovalPanel, { supabase, profile, onClose: () => setShowAdminPanel(false) }), showRosterPanel && /* @__PURE__ */ React.createElement(RosterGuruPanel, { supabase, profile, onClose: () => setShowRosterPanel(false) }), showImportRombelPanel && /* @__PURE__ */ React.createElement(ImportRombelSiswaPanel, { supabase, profile, onClose: () => setShowImportRombelPanel(false) }), /* @__PURE__ */ React.createElement(PerangkatBelajarApp, { cloudCtx: { supabase, userId: session.user.id, nama: profile.nama, nipNik: profile.nip_nik, role: profile.role, madrasahId: profile.madrasah_id } }));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, isAdmin && React.createElement("div", { style: { position: "fixed", top: 10, right: 10, zIndex: 900 } }, menuAdminOpen && React.createElement("div", { onClick: () => setMenuAdminOpen(false), style: { position: "fixed", inset: 0, zIndex: 899 } }), React.createElement("button", { onClick: () => setMenuAdminOpen((v) => !v), style: { position: "relative", zIndex: 901, padding: "6px 14px", borderRadius: 20, border: "1px solid #2c4a78", background: "#16233a", color: "#dbe6fa", fontSize: 12, fontWeight: 600, cursor: "pointer" } }, "\u2699 Menu Admin ", menuAdminOpen ? "\u25B2" : "\u25BC"), menuAdminOpen && React.createElement("div", { style: { position: "absolute", top: 34, right: 0, zIndex: 901, minWidth: 220, background: "#16233a", border: "1px solid #2c4a78", borderRadius: 10, padding: 6, display: "flex", flexDirection: "column", gap: 2, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" } }, [["\u{1F4CA} Import Rombel & Siswa", () => setShowImportRombelPanel(true)], ["\u{1F4CB} Daftarkan Guru", () => setShowRosterPanel(true)], ["\u{1F464} Persetujuan Akun", () => setShowAdminPanel(true)]].map(([teks, aksi]) => React.createElement("button", { key: teks, onClick: () => { setMenuAdminOpen(false); aksi(); }, style: { textAlign: "left", padding: "8px 10px", borderRadius: 7, border: "none", background: "transparent", color: "#dbe6fa", fontSize: 12.5, cursor: "pointer" } }, teks)))), showAdminPanel && /* @__PURE__ */ React.createElement(AdminApprovalPanel, { supabase, profile, onClose: () => setShowAdminPanel(false) }), showRosterPanel && /* @__PURE__ */ React.createElement(RosterGuruPanel, { supabase, profile, onClose: () => setShowRosterPanel(false) }), showImportRombelPanel && /* @__PURE__ */ React.createElement(ImportRombelSiswaPanel, { supabase, profile, onClose: () => setShowImportRombelPanel(false) }), /* @__PURE__ */ React.createElement(PerangkatBelajarApp, { cloudCtx: { supabase, userId: session.user.id, nama: profile.nama, nipNik: profile.nip_nik, role: profile.role, madrasahId: profile.madrasah_id } }));
 }
 function AppRoot() {
   return React.createElement(AuthGate);
@@ -15815,6 +15795,22 @@ function StepBeranda({ mapel: mapel2, mapelId: mapelId2, identitas: identitas2, 
     transition: "box-shadow 0.15s",
     boxShadow: "0 1px 2px rgba(20,30,60,0.04)"
   } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 36, height: 36, borderRadius: 9, background: warna + "1a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17 } }, icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12.5, fontWeight: 600, color: "#475569" } }, label)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: "#1a2b4a" } }, value), sub && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#94a0b3", marginTop: 2 } }, sub));
+  const urutanInti = [
+    { id: "pengaturan", selesai: identitasLengkap && (!isMadrasah || rombelSudahDiisi), judul: "Lengkapi identitas dan rombel", alasan: "Nama madrasah, nama guru, dan rombel yang diajar menjadi dasar semua dokumen." },
+    { id: "pekanefektif", selesai: pekanEfektifTerisi, judul: "Isi Pekan Efektif", alasan: "Jumlah minggu efektif menentukan pembagian JP di Program Tahunan dan Program Semester." },
+    { id: "tp", selesai: jumlahTP > 0, judul: "Susun Tujuan Pembelajaran", alasan: "Tujuan Pembelajaran diturunkan dari Capaian Pembelajaran dan menjadi dasar ATP, Prota, Promes, dan Modul Ajar." },
+    { id: "atp", selesai: Array.isArray(atpState[mapelId2]) && atpState[mapelId2].length > 0, judul: "Tarik Tujuan Pembelajaran ke ATP", alasan: "Langkah ini menyalin TP dan indikator ke Alur Tujuan Pembelajaran." },
+    { id: "prota", selesai: protaTerisi, judul: "Susun Program Tahunan", alasan: "Prota membagi alokasi JP tiap Tujuan Pembelajaran sepanjang tahun." },
+    { id: "promes", selesai: kombinasiPromesTerisi > 0, judul: "Susun Program Semester", alasan: "Promes menempatkan JP pada minggu-minggu efektif tiap semester." },
+    { id: "modulajar", selesai: jumlahModulTersusun > 0, judul: "Buat Modul Ajar", alasan: "Modul Ajar disusun per Tujuan Pembelajaran dan bisa dicetak atau diunduh dari halaman itu." }
+  ];
+  const langkahIdx = urutanInti.findIndex((l) => !l.selesai);
+  const jmlSelesai = urutanInti.filter((l) => l.selesai).length;
+  const langkah = langkahIdx >= 0 ? urutanInti[langkahIdx] : null;
+  const labelLangkah = (id) => (STEPS.find((x) => x.id === id)?.label || id);
+  const tombolLangkah = (id, teks, warna) => React.createElement("button", { onClick: () => goBeranda(id), style: { padding: "9px 18px", borderRadius: 9, border: "none", background: warna, color: "#fff", fontSize: 13.5, fontWeight: 700, cursor: "pointer" } }, teks);
+  const titikProgres = React.createElement("div", { style: { display: "flex", gap: 5, marginBottom: 10 } }, urutanInti.map((l, k) => React.createElement("span", { key: l.id, title: labelLangkah(l.id), style: { flex: 1, height: 6, borderRadius: 3, background: l.selesai ? "#16a34a" : k === langkahIdx ? "#f59e0b" : "#e3e6eb" } })));
+  const kartuLangkah = langkah ? React.createElement("div", { style: { background: "#fff8e6", border: "1px solid #f5c26b", borderRadius: 14, padding: "16px 18px", marginBottom: 20 } }, titikProgres, React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "#9a6700", letterSpacing: 1, textTransform: "uppercase" } }, "Langkah berikutnya \u00B7 ", jmlSelesai, " dari ", urutanInti.length, " selesai"), React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#1a2b4a", margin: "4px 0" } }, langkah.judul), React.createElement("div", { style: { fontSize: 12.5, color: "#475569", lineHeight: 1.55, marginBottom: 12 } }, langkah.alasan), tombolLangkah(langkah.id, "Lanjut: " + labelLangkah(langkah.id) + " \u2192", "#1a2b4a")) : React.createElement("div", { style: { background: "#ecfdf3", border: "1px solid #86efac", borderRadius: 14, padding: "16px 18px", marginBottom: 20 } }, titikProgres, React.createElement("div", { style: { fontSize: 16, fontWeight: 800, color: "#166534" } }, "\u2705 Perangkat inti sudah lengkap"), React.createElement("div", { style: { fontSize: 12.5, color: "#166534", lineHeight: 1.55, margin: "4px 0 12px" } }, "Buka Modul Ajar untuk mencetak atau mengunduh. Menu penilaian, jurnal, dan bank soal ada di grup \"Lainnya\" pada menu samping."), tombolLangkah("modulajar", "Buka Modul Ajar \u2192", "#166534"));
   return /* @__PURE__ */ React.createElement(Card, { title: "Beranda", desc: "Ringkasan progress perangkat pembelajaran untuk mata pelajaran yang sedang dipilih." }, /* @__PURE__ */ React.createElement("div", { style: {
     background: "linear-gradient(120deg, #1a2b4a 0%, #2c4a78 60%, #3d6bb0 100%)",
     borderRadius: 16,
@@ -15823,7 +15819,7 @@ function StepBeranda({ mapel: mapel2, mapelId: mapelId2, identitas: identitas2, 
     marginBottom: 22,
     position: "relative",
     overflow: "hidden"
-  } }, /* @__PURE__ */ React.createElement("svg", { width: "220", height: "220", viewBox: "0 0 220 220", style: { position: "absolute", top: -40, right: -40, opacity: 0.12 } }, /* @__PURE__ */ React.createElement("circle", { cx: "110", cy: "110", r: "100", fill: "none", stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("circle", { cx: "110", cy: "110", r: "70", fill: "none", stroke: "#fff", strokeWidth: "2" })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", color: "#9fb0d0", fontWeight: 700, marginBottom: 6 } }, "Perangkat Pembelajaran ", isMadrasah ? "Madrasah" : "Guru"), /* @__PURE__ */ React.createElement("h1", { style: { margin: "0 0 8px", fontSize: 26, fontWeight: 800 } }, "Selamat datang, ", identitas2.namaGuru || "Bapak/Ibu Guru", " \u{1F44B}"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13.5, color: "#dbe6fa", maxWidth: 560, lineHeight: 1.6 } }, "Aplikasi ini membantu menyusun perangkat pembelajaran Kurikulum Merdeka secara berurutan dan saling terhubung \u2014 dari Pekan Efektif, Capaian Pembelajaran, Tujuan Pembelajaran, ATP, Program Tahunan, Program Semester, sampai Modul Ajar berbantuan AI \u2014 supaya rencana yang disusun benar-benar selaras dengan yang diajarkan di kelas."), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, fontSize: 10.5, color: "#aebfda" } }, "Kurikulum Merdeka: Permendikbudristek No. 12/2024 & Permendikdasmen No. 13/2025", isMadrasah ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), "Kurikulum Berbasis Cinta: KMA No. 1503/2025 & Kepdirjen Pendis No. 6077/2025") : null), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, fontSize: 10, color: "#6b7fa3" } }, "Versi: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#7ddba0" } }, APP_VERSION), "\xA0\xB7 File guru yang digenerate menggunakan versi ini"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.12)", padding: "5px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 600 } }, "\u{1F4D8} Mapel aktif: ", mapel2.nama), /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.12)", padding: "5px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 600 } }, "\u{1F393} Kelas ", identitas2.kelas, " \xB7 Fase ", identitas2.fase))), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 700, color: "#1a2b4a", marginBottom: 12 } }, "Progress Perangkat \u2014 ", mapel2.nama), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 22 } }, /* @__PURE__ */ React.createElement(
+  } }, /* @__PURE__ */ React.createElement("svg", { width: "220", height: "220", viewBox: "0 0 220 220", style: { position: "absolute", top: -40, right: -40, opacity: 0.12 } }, /* @__PURE__ */ React.createElement("circle", { cx: "110", cy: "110", r: "100", fill: "none", stroke: "#fff", strokeWidth: "2" }), /* @__PURE__ */ React.createElement("circle", { cx: "110", cy: "110", r: "70", fill: "none", stroke: "#fff", strokeWidth: "2" })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", color: "#9fb0d0", fontWeight: 700, marginBottom: 6 } }, "Perangkat Pembelajaran ", isMadrasah ? "Madrasah" : "Guru"), /* @__PURE__ */ React.createElement("h1", { style: { margin: "0 0 8px", fontSize: 26, fontWeight: 800 } }, "Selamat datang, ", identitas2.namaGuru || "Bapak/Ibu Guru", " \u{1F44B}"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13.5, color: "#dbe6fa", maxWidth: 560, lineHeight: 1.6 } }, "Susun perangkat pembelajaran selangkah demi selangkah. Ikuti \"Langkah Utama\" di menu samping, atau klik tombol langkah berikutnya di bawah ini."), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, fontSize: 10.5, color: "#aebfda" } }, "Kurikulum Merdeka: Permendikbudristek No. 12/2024 & Permendikdasmen No. 13/2025", isMadrasah ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), "Kurikulum Berbasis Cinta: KMA No. 1503/2025 & Kepdirjen Pendis No. 6077/2025") : null), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, fontSize: 10, color: "#6b7fa3" } }, "Versi: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#7ddba0" } }, APP_VERSION), "\xA0\xB7 File guru yang digenerate menggunakan versi ini"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.12)", padding: "5px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 600 } }, "\u{1F4D8} Mapel aktif: ", mapel2.nama), /* @__PURE__ */ React.createElement("span", { style: { background: "rgba(255,255,255,0.12)", padding: "5px 12px", borderRadius: 20, fontSize: 11.5, fontWeight: 600 } }, "\u{1F393} Kelas ", identitas2.kelas, " \xB7 Fase ", identitas2.fase))), kartuLangkah, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13.5, fontWeight: 700, color: "#1a2b4a", marginBottom: 12 } }, "Progress Perangkat \u2014 ", mapel2.nama), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 22 } }, /* @__PURE__ */ React.createElement(
     StatCard,
     {
       icon: "\u{1FAAA}",
@@ -16085,34 +16081,52 @@ function StepCP({ mapel: mapel2 }) {
 }
 function SidebarNav({ stepIdx, setStepIdx, canManageGuru = true }) {
   const isGuruMode = !!window.GURU_CONFIG;
-  const STEP_GROUPS = [
+  const [mode, setMode] = useState(() => {
+    try {
+      return window.localStorage.getItem("misaku_nav_mode") === "lengkap" ? "lengkap" : "ringkas";
+    } catch (e) {
+      return "ringkas";
+    }
+  });
+  const ubahMode = (m) => {
+    setMode(m);
+    try {
+      window.localStorage.setItem("misaku_nav_mode", m);
+    } catch (e) {
+    }
+  };
+  const tanpaGenerator = isGuruMode || !canManageGuru;
+  const GROUPS_LENGKAP = [
     {
       id: "setup",
       label: "\u2699 Persiapan",
-      steps: isGuruMode || !canManageGuru ? ["beranda", "pengaturan", "datasiswa", "pekanefektif", "cp"] : ["beranda", "generator", "pengaturan", "datasiswa", "pekanefektif", "cp"]
+      steps: tanpaGenerator ? ["beranda", "pengaturan", "datasiswa", "pekanefektif", "cp"] : ["beranda", "generator", "pengaturan", "datasiswa", "pekanefektif", "cp"]
     },
     { id: "perangkat", label: "\u{1F4DA} Perangkat Mengajar", steps: ["tp", "atp", "prota", "promes", "modulajar", "jurnal"] },
     { id: "asesmen", label: "\u{1F4CA} Asesmen & Evaluasi", steps: ["diagnostik", "banksoal", "banksoaltka", "kktp", "penilaian", "raport"] }
   ];
+  const GROUPS_RINGKAS = [
+    { id: "inti", label: "\u2B50 Langkah Utama", steps: ["beranda", "pengaturan", "pekanefektif", "cp", "tp", "atp", "prota", "promes", "modulajar"] },
+    { id: "lainnya", label: "\u{1F4C2} Lainnya", steps: (tanpaGenerator ? [] : ["generator"]).concat(["datasiswa", "jurnal", "diagnostik", "banksoal", "banksoaltka", "kktp", "penilaian", "raport"]) }
+  ];
+  const STEP_GROUPS = mode === "ringkas" ? GROUPS_RINGKAS : GROUPS_LENGKAP;
   const activeId = STEP_GROUPS.find((g) => g.steps.includes(STEPS[stepIdx]?.id))?.id;
-  const [open, setOpen] = useState(() => {
-    const o = {};
-    STEP_GROUPS.forEach((g) => {
-      o[g.id] = g.id === activeId || g.id === "setup";
-    });
-    return o;
-  });
+  const [open, setOpen] = useState({});
+  const terbuka = (g) => g.id in open ? open[g.id] : g.id === "setup" || g.id === "inti" || g.id === activeId;
   React.useEffect(() => {
     if (activeId) setOpen((s) => ({ ...s, [activeId]: true }));
-  }, [stepIdx]);
-  return /* @__PURE__ */ React.createElement("nav", { style: { display: "flex", flexDirection: "column", gap: 3, marginBottom: 16 } }, STEP_GROUPS.map((group) => {
-    const isOpen = open[group.id];
+  }, [stepIdx, mode]);
+  const tombolMode = (m, teks) => React.createElement("button", { key: m, onClick: () => ubahMode(m), title: m === "ringkas" ? "Tampilkan langkah utama saja" : "Tampilkan semua menu", style: { flex: 1, padding: "5px 0", fontSize: 11, fontWeight: 700, borderRadius: 6, border: "none", cursor: "pointer", background: mode === m ? "#2e4470" : "transparent", color: mode === m ? "#fff" : "#7b8aa5" } }, teks);
+  const pilihMode = React.createElement("div", { style: { display: "flex", gap: 2, padding: 2, borderRadius: 8, background: "#141f33", marginBottom: 6 } }, tombolMode("ringkas", "Ringkas"), tombolMode("lengkap", "Lengkap"));
+  return /* @__PURE__ */ React.createElement("nav", { style: { display: "flex", flexDirection: "column", gap: 3, marginBottom: 16 } }, pilihMode, STEP_GROUPS.map((group) => {
+    const isOpen = terbuka(group);
     const hasActive = group.steps.includes(STEPS[stepIdx]?.id);
-    return /* @__PURE__ */ React.createElement("div", { key: group.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((s) => ({ ...s, [group.id]: !s[group.id] })), style: { width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11.5, fontWeight: 700, background: hasActive ? "#1e3460" : "#141f33", color: hasActive ? "#93c5fd" : "#7b8aa5" } }, /* @__PURE__ */ React.createElement("span", null, group.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, opacity: 0.7 } }, isOpen ? "\u25B2" : "\u25BC")), isOpen && /* @__PURE__ */ React.createElement("div", { style: { paddingLeft: 8, paddingTop: 2, display: "flex", flexDirection: "column", gap: 1 } }, group.steps.map((sid) => {
+    return /* @__PURE__ */ React.createElement("div", { key: group.id }, /* @__PURE__ */ React.createElement("button", { onClick: () => setOpen((s) => ({ ...s, [group.id]: !terbuka(group) })), style: { width: "100%", textAlign: "left", padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11.5, fontWeight: 700, background: hasActive ? "#1e3460" : "#141f33", color: hasActive ? "#93c5fd" : "#7b8aa5" } }, /* @__PURE__ */ React.createElement("span", null, group.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, opacity: 0.7 } }, isOpen ? "\u25B2" : "\u25BC")), isOpen && /* @__PURE__ */ React.createElement("div", { style: { paddingLeft: 8, paddingTop: 2, display: "flex", flexDirection: "column", gap: 1 } }, group.steps.map((sid) => {
       const i = STEPS.findIndex((s2) => s2.id === sid);
       const s = STEPS[i];
       if (!s) return null;
-      return /* @__PURE__ */ React.createElement("button", { key: s.id, onClick: () => setStepIdx(i), style: { textAlign: "left", padding: "6px 10px", borderRadius: 6, border: "none", background: i === stepIdx ? "#2e4470" : "transparent", color: i === stepIdx ? "#fff" : "#b0bdd6", cursor: "pointer", fontSize: 12, fontWeight: i === stepIdx ? 600 : 400 } }, s.label);
+      const nomor = group.id === "inti" && sid !== "beranda" ? group.steps.indexOf(sid) + ". " : "";
+      return /* @__PURE__ */ React.createElement("button", { key: s.id, onClick: () => setStepIdx(i), style: { textAlign: "left", padding: "6px 10px", borderRadius: 6, border: "none", background: i === stepIdx ? "#2e4470" : "transparent", color: i === stepIdx ? "#fff" : "#b0bdd6", cursor: "pointer", fontSize: 12, fontWeight: i === stepIdx ? 600 : 400 } }, nomor, s.label);
     })));
   }));
 }
