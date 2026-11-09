@@ -18095,6 +18095,14 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
     setPesanDraft(r.terisi > 0 ? "Draf tersusun: " + r.terisi + " isian terisi. Model: " + r.model + ". Silakan periksa dan sesuaikan di Langkah 3." : "Semua isian sudah terisi. Gunakan Susun ulang bila ingin menimpa.");
     setPertemuanBuka(0);
   };
+  const kosongkanModul = () => {
+    if (!window.confirm("Kosongkan SEMUA isian Modul Ajar untuk TP " + tpRow.kode + " dan kembali ke dasar? Tindakan ini tidak bisa dibatalkan.")) return;
+    setModulAjar((s) => ({ ...s, [mapelId2]: { ...s[mapelId2] || {}, [tpTerpilih]: emptyModulAjar(tpRow, Number(ma.jpPerPertemuan) || 2) } }));
+    setHasilAI("");
+    setStatusTerap(null);
+    setPertemuanBuka(0);
+    setPesanDraft("Modul TP ini sudah dikosongkan. Silakan Susun otomatis atau tempel hasil AI.");
+  };
   const salinDariTP = (kode) => {
     const src2 = dataMapel[kode];
     if (!src2 || !src2.pertemuan || src2.pertemuan.length === 0) return;
@@ -18281,7 +18289,8 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
         /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#374151", marginBottom: 10, lineHeight: 1.5 } }, "Satu klik mengisi model, kegiatan tiap pertemuan, asesmen, dan refleksi dari TP dan indikator. Tanpa AI berbayar, tanpa internet. Hasilnya draf yang bisa Anda periksa dan ubah."),
         /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
           /* @__PURE__ */ React.createElement(Btn, { onClick: () => susunOtomatis(false), primary: true }, "✨ Susun otomatis (isi yang kosong)"),
-          /* @__PURE__ */ React.createElement(Btn, { onClick: () => susunOtomatis(true), small: true }, "↻ Susun ulang (timpa semua)")),
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => susunOtomatis(true), small: true }, "↻ Susun ulang (timpa semua)"),
+          /* @__PURE__ */ React.createElement(Btn, { onClick: kosongkanModul, small: true, style: { color: "#b91c1c", borderColor: "#fca5a5" } }, "\u{1F5D1} Kosongkan modul TP ini")),
         pesanDraft && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, fontSize: 12, color: "#14532d", fontWeight: 600 } }, pesanDraft)),
       ma_sumber.length > 0 && /* @__PURE__ */ React.createElement("div", { style: ma_box },
         /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginBottom: 6 } }, "\u{1F4CB} Salin dari TP lain"),
