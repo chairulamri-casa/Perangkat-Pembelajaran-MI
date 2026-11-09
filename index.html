@@ -24,6 +24,16 @@
 import React, { useState, useMemo } from "react";
 const FASE_KELAS_MAP = { A: ["1", "2"], B: ["3", "4"], C: ["5", "6"] };
 const KELAS_FASE_MAP = { "1": "A", "2": "A", "3": "B", "4": "B", "5": "C", "6": "C" };
+const ROMAWI_KE_ANGKA = { I: "1", II: "2", III: "3", IV: "4", V: "5", VI: "6" };
+const normalisasiKelas = (k) => {
+  const t = String(k == null ? "" : k).trim().toUpperCase().replace(/^KELAS\s*/, "");
+  if (/^[1-6]$/.test(t)) return t;
+  const r = t.match(/^(VI|IV|V|III|II|I)(?![A-Z])/);
+  if (r) return ROMAWI_KE_ANGKA[r[1]];
+  const d = t.match(/^([1-6])/);
+  if (d) return d[1];
+  return t;
+};
 const APP_VERSION = "FINAL24k \u2014 19 Juli 2026";
 const MAPEL_MULAI_FASE = {
   matematika: "A",
@@ -10327,7 +10337,7 @@ function ImportRombelSiswaPanel({ supabase, profile, onClose, onDone }) {
         rombelIdMap[r.nama] = r.id;
       });
       if (preview.rombelBaru.length > 0) {
-        const { data: created, error: errRombel } = await supabase.from("rombel").insert(preview.rombelBaru.map((r) => ({ madrasah_id: madrasahId, kelas: r.tingkat, nama: r.rombelNama, fase: KELAS_FASE_MAP[r.tingkat] || "C" }))).select("id,nama");
+        const { data: created, error: errRombel } = await supabase.from("rombel").insert(preview.rombelBaru.map((r) => ({ madrasah_id: madrasahId, kelas: normalisasiKelas(r.tingkat), nama: r.rombelNama, fase: KELAS_FASE_MAP[normalisasiKelas(r.tingkat)] || "C" }))).select("id,nama");
         if (errRombel) {
           setMsg("\u2715 Gagal membuat rombel: " + errRombel.message);
           setBusy(false);
@@ -10849,7 +10859,10 @@ function PerangkatBelajarApp({ cloudCtx }) {
     if (!cloudCtx?.madrasahId) return;
     cloudCtx.supabase.from("rombel").select("id,kelas,nama,fase").eq("madrasah_id", cloudCtx.madrasahId).order("kelas").order("nama").then(({ data, error }) => {
       if (error || !data) return;
-      setDaftarRombel(data.map((r) => ({ id: r.id, kelas: r.kelas, nama: r.nama, fase: r.fase })));
+      setDaftarRombel(data.map((r) => {
+        const kls = normalisasiKelas(r.kelas);
+        return { id: r.id, kelas: kls, nama: r.nama, fase: KELAS_FASE_MAP[kls] || r.fase };
+      }));
     });
     cloudCtx.supabase.from("siswa").select("id,rombel_id,nama,nisn,gender").eq("madrasah_id", cloudCtx.madrasahId).then(({ data, error }) => {
       if (error || !data) return;
