@@ -17438,6 +17438,208 @@ function emptyModulAjar(tpRow, jpPerPertemuan) {
     // [{indKode, indTeks, teknik, instrumen, kriteria}]
   };
 }
+// ===== Penyusun draf Modul Ajar (offline, tanpa AI berbayar) =====
+function _kosongMA(v) {
+  if (Array.isArray(v)) return v.length === 0;
+  const s = String(v == null ? "" : v).trim();
+  return s === "" || s.indexOf("AI") >= 0 && s.length < 40 && /rekomendasi|variasikan/i.test(s);
+}
+function _ringkasIndikator(teks) {
+  let s = String(teks || "").trim().replace(/\s+/g, " ");
+  s = s.replace(/\s+(untuk|sehingga|agar|supaya)\s.*$/i, "");
+  s = s.replace(/\s+dengan\s+(jelas|benar|tepat|baik)(\s+dan\s+(benar|tepat|baik|jelas))?\.?$/i, "");
+  s = s.replace(/[.;,]+$/, "");
+  return s;
+}
+function _fokusIndikator(teks) {
+  const s = _ringkasIndikator(teks);
+  const m = s.match(/^(\S+)\s+(.+)$/);
+  const objek = m ? m[2] : s || "materi";
+  return { fokus: objek, objek: objek, kerja: m ? m[1] : "" };
+}
+function _modelDariTP(teks) {
+  const t = String(teks || "").toLowerCase();
+  let id = "Discovery Learning";
+  if (/praktik|mempraktikkan|melaksanakan|membuat|mendemonstrasikan|menyusun|menulis|bermain/.test(t)) id = "Demonstrasi dan Eksperimen";
+  if (/proyek|karya|produk|merancang/.test(t)) id = "Project Based Learning";
+  if (/menganalisis|membandingkan|mengidentifikasi|menyelidiki|mengamati/.test(t)) id = "Inquiry Learning";
+  if (/masalah|memecahkan|menyelesaikan|solusi/.test(t)) id = "Problem Based Learning";
+  if (/menjelaskan|menyebutkan|menghafal|melafalkan|membaca/.test(t) && id === "Discovery Learning") id = "Cooperative Learning";
+  const hit = MODEL_PEMBELAJARAN.find((m) => m.toLowerCase().indexOf(id.split(" ")[0].toLowerCase()) >= 0);
+  return hit || MODEL_PEMBELAJARAN.find((m) => /Discovery/i.test(m)) || MODEL_PEMBELAJARAN[1];
+}
+function _keluargaModel(model) {
+  const m = String(model || "").toLowerCase();
+  if (/discovery/.test(m)) return "discovery";
+  if (/inquiry/.test(m)) return "inquiry";
+  if (/problem|pbl\b/.test(m) && !/project/.test(m)) return "pbl";
+  if (/project|pjbl/.test(m)) return "pjbl";
+  if (/cooperative|kooperatif/.test(m)) return "coop";
+  if (/lok/.test(m)) return "lokr";
+  if (/ceramah/.test(m)) return "ceramah";
+  if (/demonstrasi|eksperimen/.test(m)) return "demo";
+  return "umum";
+}
+const _FASE_INTI = {
+  discovery: [
+    ["Murid mengamati {media} tentang {fokus}, lalu menuliskan apa yang mereka temukan dan pertanyaan yang muncul.", "Murid mencoba sendiri atau berpasangan untuk menemukan pola/aturan terkait {objek}, guru membimbing lewat pertanyaan.", "Murid menyimpulkan temuan dan menjelaskan dengan kata sendiri tentang {objek}."],
+    ["Murid mencermati contoh dan bukan contoh {objek}, lalu membandingkannya.", "Murid menguji dugaan mereka dengan latihan terbimbing dalam {kelompok}.", "Murid merumuskan kesimpulan {fokus} dan membagikannya kepada teman."]
+  ],
+  inquiry: [
+    ["Murid merumuskan pertanyaan dan dugaan sementara tentang {fokus} setelah mengamati {media}.", "Murid mengumpulkan data/informasi dari sumber belajar dan mengolahnya dalam {kelompok}.", "Murid menyajikan hasil penyelidikan dan menarik kesimpulan tentang {objek}."]
+  ],
+  pbl: [
+    ["Murid membaca masalah kontekstual yang berkaitan dengan {fokus} dan menentukan apa yang perlu dicari tahu.", "Murid berdiskusi dalam {kelompok} untuk mencari dan menguji cara penyelesaian masalah.", "Murid mempresentasikan penyelesaian dan menilai apakah cara tersebut tepat."]
+  ],
+  pjbl: [
+    ["Murid memahami tugas proyek dan tujuan yang berkaitan dengan {fokus}, lalu merencanakan langkah kerja.", "Murid mengerjakan proyek/produk dalam {kelompok} sesuai pembagian tugas dengan bimbingan guru.", "Murid memamerkan hasil kerja dan memberi masukan kepada kelompok lain."]
+  ],
+  coop: [
+    ["Guru menjelaskan inti {fokus} dengan bantuan {media}, murid mencatat hal penting.", "Murid berlatih dalam {kelompok} dengan peran bergilir (pembaca, penulis, pelapor) tentang {objek}.", "Perwakilan kelompok melaporkan hasil; kelas menyimpulkan bersama."]
+  ],
+  lokr: [
+    ["Murid membaca/menyimak materi {fokus} dengan bimbingan guru.", "Murid berlatih berdasarkan {objek} dengan umpan balik langsung dari guru dan teman.", "Murid menjelaskan kembali yang telah dipelajari dan menandai bagian yang masih sulit."]
+  ],
+  ceramah: [
+    ["Guru menjelaskan {fokus} secara runtut dengan {media}; murid menyimak dan mencatat.", "Murid bertanya jawab dan berdiskusi tentang {objek}, lalu mengerjakan latihan singkat.", "Murid merangkum materi dengan kalimat sendiri."]
+  ],
+  demo: [
+    ["Guru mendemonstrasikan {objek} langkah demi langkah dengan {media}; murid mengamati dengan cermat.", "Murid mempraktikkan {objek} secara bergantian dalam {kelompok} sambil mendapat umpan balik.", "Murid menilai praktik sendiri dan teman, lalu memperbaiki bagian yang kurang tepat."]
+  ],
+  umum: [
+    ["Murid mencermati penjelasan dan contoh tentang {fokus}.", "Murid berlatih menerapkan {objek} secara mandiri atau berkelompok.", "Murid menyimpulkan dan menyampaikan hal penting yang dipelajari."]
+  ]
+};
+const _PEMBUKA = [
+  "Salam, doa bersama, dan presensi; guru menyampaikan tujuan pembelajaran hari ini.",
+  "Salam dan doa; murid melakukan ice breaking singkat (tepuk semangat/gerak sederhana) agar siap belajar.",
+  "Salam, doa, dan mengecek kesiapan belajar; guru mengajak murid mengingat pelajaran sebelumnya."
+];
+const _BERKESADARAN = [
+  "Murid diajak fokus dan sadar akan tujuan belajar sebelum mulai.",
+  "Murid menyadari manfaat materi ini bagi kehidupannya sehari-hari.",
+  "Murid memantau pemahamannya sendiri selama belajar."
+];
+const _BERMAKNA = [
+  "Materi dikaitkan dengan pengalaman dan lingkungan murid.",
+  "Murid melihat manfaat nyata materi untuk kehidupan sehari-hari.",
+  "Contoh diambil dari kegiatan di rumah, sekolah, dan masyarakat sekitar."
+];
+const _MENGGEMBIRAKAN = [
+  "Suasana belajar santai melalui permainan, nyanyian, atau tebak-tebakan singkat.",
+  "Murid bekerja bersama teman dengan aktivitas yang menyenangkan.",
+  "Guru memberi apresiasi pada usaha setiap murid."
+];
+const _ELEMEN_KE_CINTA = { spiritual: "cinta_allah_rasul", intelektual: "cinta_ilmu", sosial: "cinta_diri_sesama", personal: "cinta_diri_sesama", ekologis: "cinta_lingkungan", kebangsaan: "cinta_tanah_air" };
+function _isiTemplat(s, v) {
+  return String(s).replace(/\{(\w+)\}/g, (_, k) => v[k] != null ? v[k] : "");
+}
+function _menit(jp, bagian) {
+  const total = Math.max(1, Number(jp) || 2) * 35;
+  const awal = Math.max(5, Math.round(total * 0.12 / 5) * 5);
+  const penutup = awal;
+  const inti = total - awal - penutup;
+  return { awal, penutup, memahami: Math.round(inti * 0.30 / 5) * 5, mengaplikasi: Math.round(inti * 0.45 / 5) * 5, merefleksi: inti - Math.round(inti * 0.30 / 5) * 5 - Math.round(inti * 0.45 / 5) * 5 }[bagian];
+}
+function susunDraftModul(tpRow, ma0, konteks, opsi) {
+  const timpa = !!(opsi && opsi.timpa);
+  const k = konteks || {};
+  const ma = { ...ma0 };
+  let terisi = 0;
+  const pakai = (lama, baru) => {
+    if (timpa || _kosongMA(lama)) { terisi++; return baru; }
+    return lama;
+  };
+  const namaMapel = (k.mapel && (k.mapel.nama || k.mapel.label)) || "mata pelajaran ini";
+  const inds = (tpRow.indikator || []).filter((i) => i && i.text);
+  const tpTeks = String(tpRow.text || "").trim();
+  const model = _modelDariTP(tpTeks);
+  ma.modelPembelajaran = (timpa || _kosongMA(ma.modelPembelajaran)) ? (terisi++, model) : ma.modelPembelajaran;
+  const keluarga = _keluargaModel(ma.modelPembelajaran);
+  const n = (ma.pertemuan || []).length || 1;
+  // distribusi indikator ke pertemuan
+  const bagi = (idx) => {
+    if (inds.length === 0) return [{ text: tpTeks }];
+    const a = Math.floor(idx * inds.length / n);
+    const b = Math.max(a + 1, Math.floor((idx + 1) * inds.length / n));
+    return inds.slice(a, b);
+  };
+  const metodeKBC = (METODE_PERTEMUAN || []).filter((m) => /KBC/.test(m));
+  const metodeUmum = ["Diskusi Kelompok", "Think-Pair-Share", "Ceramah & Tanya Jawab", "Demonstrasi", "Gallery Walk"]
+    .map((x) => METODE_PERTEMUAN.find((m) => m.indexOf(x) === 0)).filter(Boolean);
+  const elemenKBC = (k.mapelId && MAPEL_NILAI_KBC[k.mapelId]) || ["spiritual", "intelektual"];
+  const cintaIds = Array.from(new Set(elemenKBC.map((e) => _ELEMEN_KE_CINTA[e]).filter(Boolean)));
+  const jp = Number(ma.jpPerPertemuan || 2);
+  const pertemuan = (ma.pertemuan || []).map((p, i) => {
+    const grp = bagi(i);
+    const f = _fokusIndikator(grp.map((g) => g.text).join("; "));
+    const v = { fokus: f.fokus, objek: f.objek, media: "gambar/video/contoh nyata", kelompok: "kelompok kecil (3-4 murid)" };
+    const set = _FASE_INTI[keluarga] || _FASE_INTI.umum;
+    const t = set[i % set.length];
+    const q = { ...p };
+    const mA = _menit(jp, "awal"), mP = _menit(jp, "penutup");
+    q.judul = pakai(p.judul && !/^Pertemuan ke-\d+$/.test(p.judul) ? p.judul : "", "Pertemuan ke-" + (i + 1) + ": " + f.fokus.charAt(0).toUpperCase() + f.fokus.slice(1));
+    q.metodePertemuan = pakai(p.metodePertemuan, (k.isMadrasah && metodeKBC.length ? metodeKBC[i % metodeKBC.length] : metodeUmum[i % Math.max(1, metodeUmum.length)] || METODE_PERTEMUAN[0]));
+    q.kegiatanAwal = pakai(p.kegiatanAwal, "(" + mA + " menit) " + _PEMBUKA[i % _PEMBUKA.length] + " Apersepsi: guru mengajukan pertanyaan pemantik tentang " + f.fokus + ".");
+    q.kegiatanIntiMemahami = pakai(p.kegiatanIntiMemahami, "(" + _menit(jp, "memahami") + " menit) " + _isiTemplat(t[0], v));
+    q.kegiatanIntiMengaplikasi = pakai(p.kegiatanIntiMengaplikasi, "(" + _menit(jp, "mengaplikasi") + " menit) " + _isiTemplat(t[1], v));
+    q.kegiatanIntiMerefleksi = pakai(p.kegiatanIntiMerefleksi, "(" + _menit(jp, "merefleksi") + " menit) " + _isiTemplat(t[2], v));
+    q.kegiatanPenutup = pakai(p.kegiatanPenutup, "(" + mP + " menit) Murid dan guru menyimpulkan pelajaran, murid mengisi exit ticket, guru menyampaikan rencana pertemuan berikutnya, lalu berdoa dan salam penutup.");
+    q.exitTicket = pakai(p.exitTicket, "Tuliskan satu hal baru yang kamu pelajari tentang " + f.fokus + " dan satu hal yang masih ingin kamu tanyakan.");
+    q.berkesadaran = pakai(p.berkesadaran, _BERKESADARAN[i % 3]);
+    q.bermakna = pakai(p.bermakna, _BERMAKNA[i % 3]);
+    q.menggembirakan = pakai(p.menggembirakan, _MENGGEMBIRAKAN[i % 3]);
+    if (k.isMadrasah) {
+      q.pancaCinta = pakai(p.pancaCinta, cintaIds.slice(0, 2));
+      q.bentukPenerapanCinta = pakai(p.bentukPenerapanCinta, "Murid membiasakan adab belajar, saling menghargai, dan bersyukur atas ilmu saat mempelajari " + f.fokus + ".");
+    }
+    return q;
+  });
+  ma.pertemuan = pertemuan;
+  const f0 = _fokusIndikator(inds[0] ? inds[0].text : tpTeks);
+  ma.profilPelajar = pakai(ma.profilPelajar, DIMENSI_PROFIL_LULUSAN.filter((d) => /Penalaran|Kolaborasi|Keimanan|Komunikasi/.test(d)).slice(0, 3));
+  ma.asesmenAwalStrategi = pakai(ma.asesmenAwalStrategi, "Tanya jawab singkat dan kuis lisan untuk mengetahui pengetahuan awal murid tentang " + f0.fokus + ".");
+  ma.asesmenAwalTindakLanjut = pakai(ma.asesmenAwalTindakLanjut, "Murid yang belum paham dibimbing dengan penjelasan ulang dan contoh sederhana; murid yang sudah paham diberi tantangan pengayaan.");
+  ma.kompetensiAwal = pakai(ma.kompetensiAwal, "Murid telah memiliki pengetahuan dasar yang berkaitan dengan " + (tpRow.babJudul || namaMapel) + " dari pembelajaran sebelumnya.");
+  ma.pemahamanBermakna = pakai(ma.pemahamanBermakna, "Dengan memahami " + f0.fokus + ", murid dapat menerapkannya dalam kehidupan sehari-hari dengan benar dan penuh tanggung jawab.");
+  ma.pertanyaanPemantik = pakai(ma.pertanyaanPemantik, "Apa yang kamu ketahui tentang " + f0.fokus + "?\nBagaimana manfaatnya bagi kehidupanmu sehari-hari?");
+  ma.metode = pakai(ma.metode, "Diskusi, tanya jawab, penugasan, dan demonstrasi.");
+  ma.kemitraan = pakai(ma.kemitraan, "Guru bekerja sama dengan orang tua untuk mendampingi murid mengulang pelajaran di rumah.");
+  ma.lingkunganFisik = pakai(ma.lingkunganFisik, "Ruang kelas yang tertata, kursi dapat dikelompokkan, tersedia sudut baca.");
+  ma.lingkunganVirtual = pakai(ma.lingkunganVirtual, "Grup kelas untuk berbagi materi dan tugas (opsional).");
+  ma.pemanfaatanDigital = pakai(ma.pemanfaatanDigital, "Proyektor/gawai untuk menayangkan gambar atau video pendukung materi.");
+  ma.saranaPrasarana = pakai(ma.saranaPrasarana, /arab|quran|hadis|fikih|akidah|ski/i.test((k.mapelId || "") + namaMapel) ? "Buku paket, papan tulis, Al-Qur'an/kartu bacaan, gambar pendukung, lembar kerja." : "Buku paket, papan tulis, media gambar/benda konkret, lembar kerja.");
+  ma.bentukAsesmen = pakai(ma.bentukAsesmen, /praktik|mempraktikkan|melaksanakan|membuat|menyusun|menulis|melafalkan/i.test(tpTeks) ? ["Unjuk Kerja/Praktik", "Observasi/Catatan Anekdot", "Tes Lisan"] : ["Tes Tertulis (pilihan ganda/uraian)", "Observasi/Catatan Anekdot", "Tes Lisan"]);
+  ma.asesmenFormatif = pakai(ma.asesmenFormatif, "Observasi keaktifan, tanya jawab, dan exit ticket pada setiap pertemuan; umpan balik diberikan langsung.");
+  ma.asesmenSumatif = pakai(ma.asesmenSumatif, "Tes akhir TP (tertulis/lisan/praktik) untuk mengukur ketercapaian: " + tpTeks);
+  ma.refleksiGuru = pakai(ma.refleksiGuru, "Apakah tujuan pembelajaran tercapai? Bagian mana yang masih sulit bagi murid? Apa yang perlu diperbaiki pada pertemuan berikutnya?");
+  ma.refleksiMurid = pakai(ma.refleksiMurid, "Apa yang sudah kupahami hari ini? Bagian mana yang masih sulit? Apa yang ingin kupelajari lebih lanjut?");
+  if (inds.length && (timpa || !ma.asesmenIndikator || ma.asesmenIndikator.length === 0 || ma.asesmenIndikator.every((x) => !x.indTeks))) {
+    ma.asesmenIndikator = inds.map((ind) => {
+      const t = ind.text.toLowerCase();
+      const praktik = /praktik|mempraktikkan|melaksanakan|membuat|menyusun|menulis|melafalkan|membaca/.test(t);
+      return { indKode: ind.kode, indTeks: ind.text, teknik: praktik ? "Unjuk Kerja / Praktik" : "Tes Tulis", instrumen: praktik ? "Lembar observasi praktik + rubrik" : "Soal uraian/pilihan ganda", kriteria: "Tuntas jika murid mampu: " + _ringkasIndikator(ind.text) + " dengan benar (skor minimal sesuai KKTP)." };
+    });
+    terisi++;
+  }
+  if (k.isMadrasah && typeof buildPromptKBC === "function" && _kosongMA(ma.materiKBC)) {
+    ma.materiKBC = "Integrasi nilai Panca Cinta dalam pembelajaran " + namaMapel + " melalui pembiasaan adab belajar, doa, dan keteladanan guru.";
+    terisi++;
+  }
+  return { ma, terisi, model: ma.modelPembelajaran };
+}
+function statusModulAjar(ma) {
+  if (!ma) return "belum";
+  const p = ma.pertemuan || [];
+  const lengkap = p.length > 0 && p.every((x) => String(x.kegiatanAwal || "").trim() && (String(x.kegiatanIntiMemahami || "").trim() || String(x.kegiatanIntiMengaplikasi || "").trim()) && String(x.kegiatanPenutup || "").trim());
+  const adaApa = p.some((x) => String(x.kegiatanAwal || "").trim() || String(x.kegiatanIntiMemahami || "").trim()) || String(ma.pemahamanBermakna || "").trim();
+  if (lengkap && (ma.bentukAsesmen || []).length > 0 && String(ma.asesmenFormatif || "").trim()) return "siap";
+  return adaApa ? "draf" : "belum";
+}
+
+function LipatMA({ judul, hint, children }) {
+  return React.createElement("details", { style: { border: "1px solid #d8dee8", borderRadius: 10, padding: "8px 12px", margin: "10px 0", background: "#fafbfc" } }, React.createElement("summary", { style: { cursor: "pointer", fontWeight: 600, fontSize: 12.5, color: "#1a2b4a" } }, judul, hint ? React.createElement("span", { style: { fontWeight: 400, color: "#6b7280", marginLeft: 8, fontSize: 11 } }, hint) : null), React.createElement("div", { style: { marginTop: 10 } }, React.Children.toArray(children)));
+}
 function buildPromptModulAjar(tpRow, ma, mapel2, identitas2, isMadrasah) {
   const indikatorList = (tpRow.indikator || []).map((ind) => `- ${ind.kode} ${ind.text}`).join("\n");
   const jumlahPertemuan = ma.pertemuan.length;
@@ -17735,6 +17937,10 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
   const [hasilAI, setHasilAI] = useState("");
   const [statusTerap, setStatusTerap] = useState(null);
   const [copyMsg, setCopyMsg] = useState("");
+  const [langkah, setLangkah] = useState(1);
+  const [pertemuanBuka, setPertemuanBuka] = useState(0);
+  const [pesanDraft, setPesanDraft] = useState("");
+  const [salinDari, setSalinDari] = useState("");
   const atpData = mapel2.atpKey ? ATP_DATA_BY_MAPEL[mapel2.atpKey] : null;
   if (atpData) {
     (FASE_KELAS_MAP[identitas2?.fase] || ["5", "6"]).forEach((kls) => {
@@ -17764,6 +17970,10 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
     setHasilAI("");
     setStatusTerap(null);
     setCopyMsg("");
+    setLangkah(1);
+    setPertemuanBuka(0);
+    setPesanDraft("");
+    setSalinDari("");
     if (!dataMapel[tp.kode]) {
       setModulAjar((s) => ({ ...s, [mapelId2]: { ...s[mapelId2] || {}, [tp.kode]: emptyModulAjar(tp, 2) } }));
     }
@@ -17846,7 +18056,8 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
       if (rows.length === 0) return null;
       return /* @__PURE__ */ React.createElement("div", { key: kls, style: { marginBottom: 18 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13.5, color: "#1a2b4a", marginBottom: 8 } }, "Kelas ", kls), /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#eef1f5" } }, ["Kode", "Tujuan Pembelajaran", "JP", "Smt", "Status", ""].map((h) => /* @__PURE__ */ React.createElement("th", { key: h, style: css.th }, h)))), /* @__PURE__ */ React.createElement("tbody", null, rows.map((t) => {
         const sudahAda = !!dataMapel[t.kode];
-        return /* @__PURE__ */ React.createElement("tr", { key: t.kode }, /* @__PURE__ */ React.createElement("td", { style: { ...css.td, fontWeight: 700, color: "#1a2b4a" } }, t.kode), /* @__PURE__ */ React.createElement("td", { style: css.td }, t.text), /* @__PURE__ */ React.createElement("td", { style: { ...css.td, textAlign: "center" } }, t.alokasiJP), /* @__PURE__ */ React.createElement("td", { style: { ...css.td, textAlign: "center" } }, t.semester === 1 ? "Ganjil" : "Genap"), /* @__PURE__ */ React.createElement("td", { style: { ...css.td, textAlign: "center" } }, sudahAda ? /* @__PURE__ */ React.createElement("span", { style: { color: "#1c7c3d", fontWeight: 600, fontSize: 11.5 } }, "\u2713 Disusun") : /* @__PURE__ */ React.createElement("span", { style: { color: "#94a0b3", fontSize: 11.5 } }, "Belum")), /* @__PURE__ */ React.createElement("td", { style: css.td }, /* @__PURE__ */ React.createElement(Btn, { onClick: () => bukaTP(t), primary: true, small: true }, sudahAda ? "Buka" : "Susun")));
+        const stt = statusModulAjar(dataMapel[t.kode]);
+        return /* @__PURE__ */ React.createElement("tr", { key: t.kode }, /* @__PURE__ */ React.createElement("td", { style: { ...css.td, fontWeight: 700, color: "#1a2b4a" } }, t.kode), /* @__PURE__ */ React.createElement("td", { style: css.td }, t.text), /* @__PURE__ */ React.createElement("td", { style: { ...css.td, textAlign: "center" } }, t.alokasiJP), /* @__PURE__ */ React.createElement("td", { style: { ...css.td, textAlign: "center" } }, t.semester === 1 ? "Ganjil" : "Genap"), /* @__PURE__ */ React.createElement("td", { style: { ...css.td, textAlign: "center" } }, stt === "siap" ? /* @__PURE__ */ React.createElement("span", { style: { color: "#1c7c3d", fontWeight: 600, fontSize: 11.5 } }, "\u2713 Siap") : stt === "draf" ? /* @__PURE__ */ React.createElement("span", { style: { color: "#b45309", fontWeight: 600, fontSize: 11.5 } }, "\u270E Draf") : /* @__PURE__ */ React.createElement("span", { style: { color: "#94a0b3", fontSize: 11.5 } }, "Kosong")), /* @__PURE__ */ React.createElement("td", { style: css.td }, /* @__PURE__ */ React.createElement(Btn, { onClick: () => bukaTP(t), primary: true, small: true }, stt === "belum" ? "Susun" : "Buka")));
       }))));
     }));
   }
@@ -17867,14 +18078,46 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
     pemanfaatanDigital: "",
     ...maRaw
   };
+  const ma_selesai = [
+    !_kosongMA(ma.modelPembelajaran) && (ma.profilPelajar || []).length > 0,
+    ma.pertemuan.some((x) => String(x.kegiatanAwal || "").trim() !== ""),
+    ma.pertemuan.every((x) => String(x.kegiatanAwal || "").trim() && (String(x.kegiatanIntiMemahami || "").trim() || String(x.kegiatanIntiMengaplikasi || "").trim()) && String(x.kegiatanPenutup || "").trim()),
+    (ma.bentukAsesmen || []).length > 0 && String(ma.asesmenFormatif || "").trim() !== ""
+  ];
+  const ma_namaLangkah = ["Dasar", "Susun draf", "Periksa", "Asesmen & cetak"];
+  const susunOtomatis = (timpa) => {
+    if (timpa && !window.confirm("Susun ulang akan MENIMPA semua isian kegiatan dan asesmen yang sudah Anda tulis pada TP ini. Lanjutkan?")) return;
+    const r = susunDraftModul(tpRow, ma, { mapel: mapel2, mapelId: mapelId2, identitas: identitas2, isMadrasah }, { timpa });
+    setModulAjar((s) => ({ ...s, [mapelId2]: { ...s[mapelId2] || {}, [tpTerpilih]: r.ma } }));
+    setPesanDraft(r.terisi > 0 ? "Draf tersusun: " + r.terisi + " isian terisi. Model: " + r.model + ". Silakan periksa dan sesuaikan di Langkah 3." : "Semua isian sudah terisi. Gunakan Susun ulang bila ingin menimpa.");
+    setPertemuanBuka(0);
+  };
+  const salinDariTP = (kode) => {
+    const src2 = dataMapel[kode];
+    if (!src2 || !src2.pertemuan || src2.pertemuan.length === 0) return;
+    if (!window.confirm("Salin isi Modul Ajar TP " + kode + " ke TP ini? Isian di TP ini akan diganti.")) return;
+    const pert = ma.pertemuan.map((p, i) => ({ ...src2.pertemuan[i % src2.pertemuan.length], _id: p._id, judul: "Pertemuan ke-" + (i + 1) }));
+    setModulAjar((s) => ({ ...s, [mapelId2]: { ...s[mapelId2] || {}, [tpTerpilih]: { ...src2, pertemuan: pert, jpPerPertemuan: ma.jpPerPertemuan, asesmenIndikator: [], lkpdList: [], lampiranAsesmen: "", rubrik: [] } } }));
+    setPesanDraft("Isi dari TP " + kode + " disalin. Sesuaikan judul dan isi agar cocok dengan TP ini.");
+    setSalinDari("");
+  };
+  const ma_sumber = daftarTP.filter((x) => x.kode !== tpTerpilih && statusModulAjar(dataMapel[x.kode]) !== "belum");
+  const ma_box = { background: "#fff", border: "1px solid #d8dee8", borderRadius: 10, padding: 14, marginBottom: 12 };
   return /* @__PURE__ */ React.createElement(
     Card,
     {
-      title: `Modul Ajar \u2014 ${tpRow.kode} ${tpRow.text}`,
+      title: `Modul Ajar — ${tpRow.kode} ${tpRow.text}`,
       desc: `Kelas ${tpRow.kelas} \xB7 Semester ${tpRow.semester === 1 ? "Ganjil" : "Genap"} \xB7 Elemen ${elemenLabel(tpRow.elemen)} \xB7 Alokasi ${tpRow.alokasiJP} JP`,
-      action: /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "cover"), small: true, title: "1-2 hal \u2014 untuk pengawas/kunjungan" }, "\u{1F4C4} Cover"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "ringkas"), small: true, title: "Format tabel padat \u2014 hemat ~60% halaman" }, "\u{1F4CB} Ringkas"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "infografis"), small: true, title: "RPP Poster Infografis \u2014 1 halaman visual" }, "\u{1F3A8} Infografis"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih), small: true, title: "Format lengkap RPPMBC \u2014 untuk arsip madrasah" }, "\u{1F5A8}\uFE0F Lengkap"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "word"), small: true, title: "Download Word (.doc) \u2014 format RPPMBC profesional", style: { background: "#1b4332", color: "#fff", border: "none" } }, "\u{1F4DD} Word"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => setTpTerpilih(null), small: true }, "\u2190 Daftar TP"))
+      action: /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+        /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih), small: true, title: "Format lengkap RPPMBC — untuk arsip madrasah" }, "\u{1F5A8}️ Cetak Lengkap"),
+        /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "word"), small: true, title: "Download Word (.doc)", style: { background: "#1b4332", color: "#fff", border: "none" } }, "\u{1F4DD} Word"),
+        /* @__PURE__ */ React.createElement(Btn, { onClick: () => setTpTerpilih(null), small: true }, "← Daftar TP"))
     },
-    /* @__PURE__ */ React.createElement("div", { "data-pengaturan-modul": "true", style: {
+    /* @__PURE__ */ React.createElement("div", { "data-stepper-modul": "true", style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 } }, ma_namaLangkah.map((nm, i) => /* @__PURE__ */ React.createElement("button", { key: nm, type: "button", onClick: () => setLangkah(i + 1), style: { cursor: "pointer", padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: langkah === i + 1 ? "2px solid #1a2b4a" : "1px solid #c9d3e8", background: langkah === i + 1 ? "#1a2b4a" : "#fff", color: langkah === i + 1 ? "#fff" : "#1a2b4a" } }, (ma_selesai[i] ? "✓ " : "") + (i + 1) + ". " + nm))),
+    langkah === 1 && /* @__PURE__ */ React.createElement("div", null,
+      /* @__PURE__ */ React.createElement("div", { style: { ...ma_box, background: "#eef3fb", borderColor: "#c9dcf5", fontSize: 12.5, lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("b", null, "Tujuan Pembelajaran: "), tpRow.kode, " — ", tpRow.text, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#5a6b85", marginTop: 4 } }, mapel2.nama, " \xB7 Kelas ", tpRow.kelas, " / Fase ", identitas2.fase, " \xB7 ", identitas2.namaSekolah || "-"),
+        (tpRow.indikator || []).length > 0 && /* @__PURE__ */ React.createElement(LipatMA, { judul: "Lihat " + tpRow.indikator.length + " indikator TP" }, /* @__PURE__ */ React.createElement("ul", { style: { margin: "0 0 0 18px", padding: 0, fontSize: 12 } }, tpRow.indikator.map((ind) => /* @__PURE__ */ React.createElement("li", { key: ind.kode }, ind.kode, " ", ind.text))))),
+      React.createElement("div", { "data-pengaturan-modul": "true", style: {
       background: "linear-gradient(135deg,#1a2b4a,#2d4a7a)",
       borderRadius: 12,
       padding: "14px 16px",
@@ -17919,101 +18162,8 @@ function StepModulAjar({ mapel: mapel2, mapelId: mapelId2, mapelInfo, identitas:
       },
       MODEL_PEMBELAJARAN.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))
     ), ma.modelPembelajaran.startsWith("\u2728") && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 5, fontSize: 10, color: "#c4b5fd" } }, "\u2728 AI akan analisis materi & pilih model terbaik")))),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#eef3fb", border: "1px solid #c9dcf5", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginBottom: 6 } }, "A. Informasi Umum (otomatis)"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#374151", lineHeight: 1.6 } }, /* @__PURE__ */ React.createElement("b", null, "Satuan Pendidikan:"), " ", identitas2.namaSekolah || "-", " \xA0|\xA0 ", /* @__PURE__ */ React.createElement("b", null, "Mata Pelajaran:"), " ", mapel2.nama, " \xA0|\xA0 ", /* @__PURE__ */ React.createElement("b", null, "Kelas/Fase:"), " ", tpRow.kelas, " / ", identitas2.fase, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Tujuan Pembelajaran:"), " ", tpRow.kode, " \u2014 ", tpRow.text, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Indikator TP:"), /* @__PURE__ */ React.createElement("ul", { style: { margin: "4px 0 0 18px", padding: 0 } }, (tpRow.indikator || []).map((ind) => /* @__PURE__ */ React.createElement("li", { key: ind.kode }, ind.kode, " ", ind.text))))),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#f3f0fc", border: "1px solid #d8cdf5", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#4c1d95" } }, "\u2728 Bisa juga diisi dengan bantuan AI (opsional)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#7c3aed", marginRight: 2 } }, "Buka AI:"), [
-      { label: "Claude", url: "https://claude.ai", bg: "#f97316", color: "#fff" },
-      { label: "ChatGPT", url: "https://chat.openai.com", bg: "#10a37f", color: "#fff" },
-      { label: "Gemini", url: "https://gemini.google.com", bg: "#4285f4", color: "#fff" }
-    ].map((ai) => /* @__PURE__ */ React.createElement(
-      "a",
-      {
-        key: ai.label,
-        href: ai.url,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        style: {
-          fontSize: 11,
-          padding: "2px 10px",
-          borderRadius: 10,
-          textDecoration: "none",
-          background: ai.bg,
-          color: ai.color,
-          fontWeight: 600,
-          display: "inline-block"
-        }
-      },
-      ai.label,
-      " \u2197"
-    )), /* @__PURE__ */ React.createElement("div", { style: { width: 1, height: 18, background: "#c4b5fd", margin: "0 2px" } }), /* @__PURE__ */ React.createElement(Btn, { onClick: () => setShowPrompt((v) => !v), small: true }, showPrompt ? "\u25B2 Sembunyikan Prompt" : "\u25BC Tampilkan Prompt AI"), /* @__PURE__ */ React.createElement(
-      Btn,
-      {
-        small: true,
-        style: { color: "#dc2626", borderColor: "#dc262644", background: "#3f1010" },
-        onClick: () => {
-          if (!window.confirm(`Reset seluruh konten Modul Ajar untuk ${tpRow.kode}?
-
-Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
-          setModulAjar((s) => ({
-            ...s,
-            [mapelId2]: { ...s[mapelId2] || {}, [tpTerpilih]: emptyModulAjar(tpRow, ma.jpPerPertemuan || 2) }
-          }));
-          setHasilAI("");
-          setStatusTerap(null);
-          setShowPrompt(false);
-        }
-      },
-      "\u{1F5D1} Reset"
-    ))), showPrompt && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: "#5b21b6", margin: "0 0 8px" } }, 'Salin prompt di bawah, tempel ke AI assistant pilihan Anda (ChatGPT, Claude, Gemini, dll di luar aplikasi ini), lalu tempel jawabannya ke kotak kedua dan klik "Terapkan ke Form".'), /* @__PURE__ */ React.createElement("textarea", { readOnly: true, style: { ...ta, background: "#fff", fontFamily: "monospace", fontSize: 11 }, rows: 8, value: buildPromptModulAjar(tpRow, ma, mapel2, identitas2, isMadrasah), onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginTop: 6 } }, /* @__PURE__ */ React.createElement(Btn, { onClick: () => salinPrompt(buildPromptModulAjar(tpRow, ma, mapel2, identitas2, isMadrasah)), primary: true, small: true }, "\u{1F4CB} Salin Prompt"), copyMsg && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#5b21b6" } }, copyMsg)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, paddingTop: 12, borderTop: "1px dashed #c4b5fd" } }, /* @__PURE__ */ React.createElement(Field, { label: "Tempel jawaban AI di sini" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 6, value: hasilAI, onChange: (e) => setHasilAI(e.target.value), placeholder: "Tempel seluruh jawaban dari AI assistant di sini, lalu klik 'Terapkan ke Form' di bawah." })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { onClick: terapkanHasilAI, primary: true, small: true, disabled: !hasilAI.trim() }, "Terapkan ke Form"), /* @__PURE__ */ React.createElement(
-      Btn,
-      {
-        small: true,
-        disabled: !hasilAI.trim(),
-        style: {
-          color: hasilAI.trim() ? "#dc2626" : "#5a7099",
-          borderColor: hasilAI.trim() ? "#dc262644" : "#2a3d5e",
-          background: hasilAI.trim() ? "#3f1010" : "transparent",
-          cursor: hasilAI.trim() ? "pointer" : "default"
-        },
-        onClick: () => {
-          if (hasilAI.trim()) {
-            setHasilAI("");
-            setStatusTerap(null);
-          }
-        }
-      },
-      "\u2715 Bersihkan Kotak AI"
-    ), statusTerap && (statusTerap.berhasil ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "#1c7c3d", fontWeight: 600 } }, "\u2713 ", statusTerap.jumlahTerisi, " bagian berhasil diterapkan.") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "#92660a", fontWeight: 600 } }, "\u26A0 Format tidak terbaca otomatis. Salin manual.")))))),
-    /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginBottom: 8 } }, "B. Komponen Inti"),
-    /* @__PURE__ */ React.createElement("div", { style: {
-      fontWeight: 700,
-      fontSize: 12.5,
-      color: "#1a2b4a",
-      marginTop: 18,
-      marginBottom: 8,
-      borderBottom: "2px solid #1b4332",
-      paddingBottom: 4
-    } }, "C. Identifikasi Murid & KBC"),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 9, padding: "10px 12px", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 12, color: "#15803d", marginBottom: 8 } }, "C.1 Asesmen pada Awal Pembelajaran", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 400, color: "#6b7280", marginLeft: 8 } }, "(opsional)")), /* @__PURE__ */ React.createElement(Field, { label: "Strategi penilaian (cara mengecek pengetahuan awal)" }, /* @__PURE__ */ React.createElement(
-      "textarea",
-      {
-        style: ta,
-        rows: 2,
-        value: ma.asesmenAwalStrategi || "",
-        onChange: (e) => updMA("asesmenAwalStrategi", e.target.value),
-        placeholder: "Contoh: Guru mengajukan 2-3 pertanyaan lisan sebelum pembelajaran dimulai. Murid menulis apa yang sudah diketahui tentang topik ini di sticky note."
-      }
-    )), /* @__PURE__ */ React.createElement(Field, { label: "Tindak lanjut berdasarkan hasil" }, /* @__PURE__ */ React.createElement(
-      "textarea",
-      {
-        style: ta,
-        rows: 2,
-        value: ma.asesmenAwalTindakLanjut || "",
-        onChange: (e) => updMA("asesmenAwalTindakLanjut", e.target.value),
-        placeholder: "Contoh: Jika murid sudah memahami konsep dasar \u2192 langsung ke tahap aplikasi. Jika belum \u2192 guru menyajikan apersepsi tambahan sebelum masuk inti."
-      }
-    ))),
-    /* @__PURE__ */ React.createElement(Field, { label: "C.2 Dimensi Profil Lulusan (pilih satu atau lebih)" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, DIMENSI_PROFIL_LULUSAN.map((d) => /* @__PURE__ */ React.createElement("label", { key: d, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, background: ma.profilPelajar.includes(d) ? "#1a2b4a" : "#f1f3f6", color: ma.profilPelajar.includes(d) ? "#fff" : "#374151", padding: "5px 10px", borderRadius: 14, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: ma.profilPelajar.includes(d), onChange: () => toggleCheklist("profilPelajar", d), style: { display: "none" } }), d)))),
-    /* @__PURE__ */ React.createElement(Field, { label: "C.3 Materi Integrasi KBC \u{1F49A} (KMA 512/2026 \u2014 6 Nilai Dasar Cinta)" }, !ma.materiKBC && (() => {
+      React.createElement(Field, { label: "C.2 Dimensi Profil Lulusan (pilih satu atau lebih)" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, DIMENSI_PROFIL_LULUSAN.map((d) => /* @__PURE__ */ React.createElement("label", { key: d, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, background: ma.profilPelajar.includes(d) ? "#1a2b4a" : "#f1f3f6", color: ma.profilPelajar.includes(d) ? "#fff" : "#374151", padding: "5px 10px", borderRadius: 14, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: ma.profilPelajar.includes(d), onChange: () => toggleCheklist("profilPelajar", d), style: { display: "none" } }), d)))),
+      React.createElement(Field, { label: "C.3 Materi Integrasi KBC \u{1F49A} (KMA 512/2026 \u2014 6 Nilai Dasar Cinta)" }, !ma.materiKBC && (() => {
       const autoIds = (() => {
         try {
           const allBab = Object.values(atpState || {}).flatMap((b) => Array.isArray(b) ? b : []);
@@ -18121,20 +18271,174 @@ Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
         onChange: (e) => updMA("materiKBC", e.target.value),
         placeholder: "Diisi otomatis saat TP dipilih berdasarkan elemen CP. Klik \u26A1 Buat Ulang Prompt untuk memperbarui."
       }
+    ))),
+    langkah === 2 && /* @__PURE__ */ React.createElement("div", null,
+      /* @__PURE__ */ React.createElement("div", { "data-susun-otomatis": "true", style: { ...ma_box, background: "#f0fdf4", borderColor: "#bbf7d0" } },
+        /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13.5, color: "#14532d", marginBottom: 4 } }, "✨ Susun draf otomatis"),
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#374151", marginBottom: 10, lineHeight: 1.5 } }, "Satu klik mengisi model, kegiatan tiap pertemuan, asesmen, dan refleksi dari TP dan indikator. Tanpa AI berbayar, tanpa internet. Hasilnya draf yang bisa Anda periksa dan ubah."),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => susunOtomatis(false), primary: true }, "✨ Susun otomatis (isi yang kosong)"),
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => susunOtomatis(true), small: true }, "↻ Susun ulang (timpa semua)")),
+        pesanDraft && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, fontSize: 12, color: "#14532d", fontWeight: 600 } }, pesanDraft)),
+      ma_sumber.length > 0 && /* @__PURE__ */ React.createElement("div", { style: ma_box },
+        /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginBottom: 6 } }, "\u{1F4CB} Salin dari TP lain"),
+        /* @__PURE__ */ React.createElement("select", { value: salinDari, onChange: (e) => { setSalinDari(e.target.value); if (e.target.value) salinDariTP(e.target.value); }, style: { padding: "6px 8px", borderRadius: 6, border: "1px solid #c9d3e8", fontSize: 12, maxWidth: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "Pilih TP yang sudah disusun..."), ma_sumber.map((x) => /* @__PURE__ */ React.createElement("option", { key: x.kode, value: x.kode }, x.kode + " — " + String(x.text).slice(0, 60))))),
+      /* @__PURE__ */ React.createElement(LipatMA, { judul: "Pakai AI luar (Claude/ChatGPT/Gemini)", hint: "opsional" }, React.createElement("div", { style: { background: "#f3f0fc", border: "1px solid #d8cdf5", borderRadius: 10, padding: "12px 14px", marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#4c1d95" } }, "\u2728 Bisa juga diisi dengan bantuan AI (opsional)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#7c3aed", marginRight: 2 } }, "Buka AI:"), [
+      { label: "Claude", url: "https://claude.ai", bg: "#f97316", color: "#fff" },
+      { label: "ChatGPT", url: "https://chat.openai.com", bg: "#10a37f", color: "#fff" },
+      { label: "Gemini", url: "https://gemini.google.com", bg: "#4285f4", color: "#fff" }
+    ].map((ai) => /* @__PURE__ */ React.createElement(
+      "a",
+      {
+        key: ai.label,
+        href: ai.url,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        style: {
+          fontSize: 11,
+          padding: "2px 10px",
+          borderRadius: 10,
+          textDecoration: "none",
+          background: ai.bg,
+          color: ai.color,
+          fontWeight: 600,
+          display: "inline-block"
+        }
+      },
+      ai.label,
+      " \u2197"
+    )), /* @__PURE__ */ React.createElement("div", { style: { width: 1, height: 18, background: "#c4b5fd", margin: "0 2px" } }), /* @__PURE__ */ React.createElement(Btn, { onClick: () => setShowPrompt((v) => !v), small: true }, showPrompt ? "\u25B2 Sembunyikan Prompt" : "\u25BC Tampilkan Prompt AI"), /* @__PURE__ */ React.createElement(
+      Btn,
+      {
+        small: true,
+        style: { color: "#dc2626", borderColor: "#dc262644", background: "#3f1010" },
+        onClick: () => {
+          if (!window.confirm(`Reset seluruh konten Modul Ajar untuk ${tpRow.kode}?
+
+Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
+          setModulAjar((s) => ({
+            ...s,
+            [mapelId2]: { ...s[mapelId2] || {}, [tpTerpilih]: emptyModulAjar(tpRow, ma.jpPerPertemuan || 2) }
+          }));
+          setHasilAI("");
+          setStatusTerap(null);
+          setShowPrompt(false);
+        }
+      },
+      "\u{1F5D1} Reset"
+    ))), showPrompt && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11.5, color: "#5b21b6", margin: "0 0 8px" } }, 'Salin prompt di bawah, tempel ke AI assistant pilihan Anda (ChatGPT, Claude, Gemini, dll di luar aplikasi ini), lalu tempel jawabannya ke kotak kedua dan klik "Terapkan ke Form".'), /* @__PURE__ */ React.createElement("textarea", { readOnly: true, style: { ...ta, background: "#fff", fontFamily: "monospace", fontSize: 11 }, rows: 8, value: buildPromptModulAjar(tpRow, ma, mapel2, identitas2, isMadrasah), onClick: (e) => e.target.select() }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginTop: 6 } }, /* @__PURE__ */ React.createElement(Btn, { onClick: () => salinPrompt(buildPromptModulAjar(tpRow, ma, mapel2, identitas2, isMadrasah)), primary: true, small: true }, "\u{1F4CB} Salin Prompt"), copyMsg && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#5b21b6" } }, copyMsg)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 14, paddingTop: 12, borderTop: "1px dashed #c4b5fd" } }, /* @__PURE__ */ React.createElement(Field, { label: "Tempel jawaban AI di sini" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 6, value: hasilAI, onChange: (e) => setHasilAI(e.target.value), placeholder: "Tempel seluruh jawaban dari AI assistant di sini, lalu klik 'Terapkan ke Form' di bawah." })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement(Btn, { onClick: terapkanHasilAI, primary: true, small: true, disabled: !hasilAI.trim() }, "Terapkan ke Form"), /* @__PURE__ */ React.createElement(
+      Btn,
+      {
+        small: true,
+        disabled: !hasilAI.trim(),
+        style: {
+          color: hasilAI.trim() ? "#dc2626" : "#5a7099",
+          borderColor: hasilAI.trim() ? "#dc262644" : "#2a3d5e",
+          background: hasilAI.trim() ? "#3f1010" : "transparent",
+          cursor: hasilAI.trim() ? "pointer" : "default"
+        },
+        onClick: () => {
+          if (hasilAI.trim()) {
+            setHasilAI("");
+            setStatusTerap(null);
+          }
+        }
+      },
+      "\u2715 Bersihkan Kotak AI"
+    ), statusTerap && (statusTerap.berhasil ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "#1c7c3d", fontWeight: 600 } }, "\u2713 ", statusTerap.jumlahTerisi, " bagian berhasil diterapkan.") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11.5, color: "#92660a", fontWeight: 600 } }, "\u26A0 Format tidak terbaca otomatis. Salin manual.")))))))),
+    langkah === 3 && /* @__PURE__ */ React.createElement("div", null,
+      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11.5, color: "#6b7280", marginBottom: 10 } }, ma.pertemuan.length, " pertemuan \xD7 ", ma.jpPerPertemuan, " JP — ", _kosongMA(ma.modelPembelajaran) ? "model belum dipilih (klik Susun otomatis di Langkah 2)" : ma.modelPembelajaran, ". Buka satu pertemuan untuk memeriksa."),
+      ma.pertemuan.map((p, idx) => {
+        const buka = pertemuanBuka === idx;
+        const lengkap = String(p.kegiatanAwal || "").trim() && (String(p.kegiatanIntiMemahami || "").trim() || String(p.kegiatanIntiMengaplikasi || "").trim()) && String(p.kegiatanPenutup || "").trim();
+        return /* @__PURE__ */ React.createElement("div", { key: p._id, style: { border: "1px solid #d8dee8", borderRadius: 10, marginBottom: 10, background: "#fff" } },
+          /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setPertemuanBuka(buka ? -1 : idx), style: { width: "100%", textAlign: "left", cursor: "pointer", padding: "10px 14px", border: "none", background: "transparent", fontSize: 13, fontWeight: 700, color: "#1a2b4a", display: "flex", justifyContent: "space-between", gap: 8 } }, /* @__PURE__ */ React.createElement("span", null, (buka ? "▾ " : "▸ ") + (p.judul || "Pertemuan ke-" + (idx + 1))), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: lengkap ? "#1c7c3d" : "#b45309" } }, lengkap ? "✓ lengkap" : "belum lengkap")),
+          buka && /* @__PURE__ */ React.createElement("div", { style: { padding: "0 14px 14px" } }, React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a" } }, p.judul), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#6b7280" } }, "Metode:"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: p.metodePertemuan || "\u2728 AI variasikan",
+        onChange: (e) => updPertemuan(idx, "metodePertemuan", e.target.value),
+        style: {
+          ...css.input,
+          fontSize: 11,
+          padding: "3px 8px",
+          color: (p.metodePertemuan || "\u2728 AI variasikan").startsWith("\u2728") ? "#7c3aed" : "#1a2b4a",
+          fontWeight: (p.metodePertemuan || "").startsWith("\u2728") ? 600 : 400,
+          border: (p.metodePertemuan || "").startsWith("\u2728") ? "1px solid #c4b5fd" : "1px solid #d8dde5"
+        }
+      },
+      METODE_PERTEMUAN.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))
+    ))), React.createElement(Field, { label: "Kegiatan Awal / Pendahuluan" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: p.kegiatanAwal, onChange: (e) => updPertemuan(idx, "kegiatanAwal", e.target.value), placeholder: "Salam, doa, presensi, apersepsi, pertanyaan pemantik, menyampaikan tujuan pembelajaran..." })), React.createElement("div", { style: { border: "1px solid #d1d8e0", borderRadius: 8, padding: "8px 10px", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#1a2b4a", marginBottom: 6 } }, "Kegiatan Inti", (() => {
+      const fase = getModelFase(ma?.modelPembelajaran || "");
+      if (!fase) return null;
+      const modelNama = (ma?.modelPembelajaran || "").replace(/💚.*$/, "").trim();
+      return /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, fontSize: 10, color: "#7c3aed", marginLeft: 6 } }, "(", modelNama, ")");
+    })()), (() => {
+      const fase = getModelFase(ma?.modelPembelajaran || "");
+      const hints = fase ? {
+        m: fase.slice(0, 2).join(" \u2192 "),
+        a: fase.slice(2, 4).join(" \u2192 "),
+        r: fase.slice(4).join(" \u2192 ") || "Presentasi & Refleksi"
+      } : { m: "", a: "", r: "" };
+      return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: `A. Memahami${hints.m ? " \xB7 " + hints.m : ""}` }, /* @__PURE__ */ React.createElement(
+        "textarea",
+        {
+          style: { ...ta, background: "#f8faff" },
+          rows: 3,
+          value: p.kegiatanIntiMemahami || "",
+          onChange: (e) => updPertemuan(idx, "kegiatanIntiMemahami", e.target.value),
+          placeholder: hints.m || "Fase pengenalan topik, memicu rasa ingin tahu, orientasi masalah..."
+        }
+      )), /* @__PURE__ */ React.createElement(Field, { label: `B. Mengaplikasi${hints.a ? " \xB7 " + hints.a : ""}` }, /* @__PURE__ */ React.createElement(
+        "textarea",
+        {
+          style: { ...ta, background: "#f8faff" },
+          rows: 3,
+          value: p.kegiatanIntiMengaplikasi || "",
+          onChange: (e) => updPertemuan(idx, "kegiatanIntiMengaplikasi", e.target.value),
+          placeholder: hints.a || "Fase eksplorasi, investigasi, kerja kelompok, pengumpulan data..."
+        }
+      )), /* @__PURE__ */ React.createElement(Field, { label: `C. Merefleksi${hints.r ? " \xB7 " + hints.r : ""}` }, /* @__PURE__ */ React.createElement(
+        "textarea",
+        {
+          style: { ...ta, background: "#f8faff" },
+          rows: 3,
+          value: p.kegiatanIntiMerefleksi || "",
+          onChange: (e) => updPertemuan(idx, "kegiatanIntiMerefleksi", e.target.value),
+          placeholder: hints.r || "Fase presentasi hasil, refleksi, evaluasi, generalisasi..."
+        }
+      )));
+    })()), React.createElement(Field, { label: "Kegiatan Penutup" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: p.kegiatanPenutup, onChange: (e) => updPertemuan(idx, "kegiatanPenutup", e.target.value), placeholder: "Penguatan + simpulan bersama \u2192 info kegiatan selanjutnya \u2192 syukur + salam..." })), React.createElement(Field, { label: "\u{1F39F} Exit Ticket (Asesmen Formatif Akhir Pertemuan)" }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#555", marginBottom: 4 } }, "1-2 pertanyaan singkat yang murid jawab sebelum keluar kelas \u2014 untuk mengukur pemahaman secara cepat."), /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        style: { ...ta, background: "#fffbeb" },
+        rows: 2,
+        value: p.exitTicket || "",
+        onChange: (e) => updPertemuan(idx, "exitTicket", e.target.value),
+        placeholder: "Contoh pertanyaan Exit Ticket:\n1. Sebutkan 1 hal terpenting yang kamu pelajari hari ini!\n2. Apa yang masih belum kamu pahami? Tulis di kertas lalu serahkan ke guru."
+      }
     )),
-    /* @__PURE__ */ React.createElement("div", { style: {
-      fontWeight: 700,
-      fontSize: 12.5,
-      color: "#1a2b4a",
-      marginTop: 18,
-      marginBottom: 8,
-      borderBottom: "2px solid #1b4332",
-      paddingBottom: 4
-    } }, "D. Desain Pembelajaran"),
-    /* @__PURE__ */ React.createElement(Field, { label: "Kompetensi Awal (kemampuan prasyarat murid)" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.kompetensiAwal, onChange: (e) => updMA("kompetensiAwal", e.target.value), placeholder: "Contoh: Murid telah memahami operasi penjumlahan dan pengurangan bilangan cacah." })),
-    /* @__PURE__ */ React.createElement(Field, { label: "Pemahaman Bermakna" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.pemahamanBermakna, onChange: (e) => updMA("pemahamanBermakna", e.target.value), placeholder: "Contoh: Murid memahami bahwa nilai tempat membantu membaca bilangan besar dengan lebih mudah." })),
-    /* @__PURE__ */ React.createElement(Field, { label: "Pertanyaan Pemantik" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.pertanyaanPemantik, onChange: (e) => updMA("pertanyaanPemantik", e.target.value), placeholder: "Contoh: Bagaimana caramu membaca angka 1.000.000 dengan cepat tanpa menghitung satu-satu nolnya?" })),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 9, padding: "10px 12px", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 12, color: "#1e40af", marginBottom: 10 } }, "D.2 Kerangka Pembelajaran"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 11, color: "#374151", marginBottom: 6 } }, "a. Praktik Pedagogis"), /* @__PURE__ */ React.createElement(Field, { label: "Model Pembelajaran" }, /* @__PURE__ */ React.createElement("select", { style: css.input, value: ma.modelPembelajaran, onChange: (e) => updMA("modelPembelajaran", e.target.value) }, MODEL_PEMBELAJARAN.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))), ma.modelPembelajaran.startsWith("\u2728") && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "#1d4ed8", marginTop: 3 } }, "\u2728 AI akan analisis materi dan pilih model terbaik")), /* @__PURE__ */ React.createElement(Field, { label: "Metode Pembelajaran" }, /* @__PURE__ */ React.createElement(
+            /* @__PURE__ */ React.createElement(LipatMA, { judul: "Prinsip & Nilai Cinta", hint: "opsional" }, React.createElement("div", { style: { background: "#eef6f1", border: "1px solid #bfe0cc", borderRadius: 8, padding: 10, marginTop: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#1f6b3f", marginBottom: 6 } }, "\u{1F9E0} Penerapan Pembelajaran Mendalam \u2014 ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, fontSize: 10.5, color: "#3b7a57" } }, "3 Pendekatan Resmi KBC (KMA No. 512/2026)")), /* @__PURE__ */ React.createElement(Field, { label: "\u262F Berkesadaran (Mindful Learning KBC)" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.berkesadaran, onChange: (e) => updPertemuan(idx, "berkesadaran", e.target.value), placeholder: "Bagian mana dari kegiatan ini yang membuat murid sadar penuh atas tujuan dan proses belajarnya?" })), /* @__PURE__ */ React.createElement(Field, { label: "\u{1F4A1} Bermakna (Deep Learning KBC)" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.bermakna, onChange: (e) => updPertemuan(idx, "bermakna", e.target.value), placeholder: "Bagian mana yang membantu murid memahami relevansi dan manfaat nyata dari yang dipelajari?" })), /* @__PURE__ */ React.createElement(Field, { label: "\u{1F60A} Menggembirakan (Joyful Learning KBC)" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.menggembirakan, onChange: (e) => updPertemuan(idx, "menggembirakan", e.target.value), placeholder: "Bagian mana yang membuat suasana belajar terasa positif dan menyenangkan bagi murid?" }))), isMadrasah && /* @__PURE__ */ React.createElement("div", { style: { background: "#fff7ea", border: "1px solid #f3dba3", borderRadius: 8, padding: 10, marginTop: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#7a5106", marginBottom: 6 } }, "\u{1F497} Integrasi Kurikulum Berbasis Cinta (Panca Cinta)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 } }, PANCA_CINTA.map((pc) => /* @__PURE__ */ React.createElement("label", { key: pc.id, style: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, background: (p.pancaCinta || []).includes(pc.id) ? "#c9881a" : "#fff", color: (p.pancaCinta || []).includes(pc.id) ? "#fff" : "#7a5106", padding: "4px 8px", borderRadius: 12, cursor: "pointer", border: "1px solid #e8c87a" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: (p.pancaCinta || []).includes(pc.id), onChange: () => togglePancaCinta(idx, pc.id), style: { display: "none" } }), pc.label))), /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.bentukPenerapanCinta, onChange: (e) => updPertemuan(idx, "bentukPenerapanCinta", e.target.value), placeholder: "Bentuk penerapan nilai cinta pada pertemuan ini, contoh: mengajak murid bersyukur atas kemampuan berhitung sebagai nikmat Allah Swt." })))));
+      }),
+      /* @__PURE__ */ React.createElement(LipatMA, { judul: "Pelengkap Modul", hint: "opsional: asesmen awal, kompetensi awal, pemahaman bermakna, pemantik, kerangka, sarana" }, React.createElement("div", { style: { background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 9, padding: "10px 12px", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 12, color: "#15803d", marginBottom: 8 } }, "C.1 Asesmen pada Awal Pembelajaran", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 400, color: "#6b7280", marginLeft: 8 } }, "(opsional)")), /* @__PURE__ */ React.createElement(Field, { label: "Strategi penilaian (cara mengecek pengetahuan awal)" }, /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        style: ta,
+        rows: 2,
+        value: ma.asesmenAwalStrategi || "",
+        onChange: (e) => updMA("asesmenAwalStrategi", e.target.value),
+        placeholder: "Contoh: Guru mengajukan 2-3 pertanyaan lisan sebelum pembelajaran dimulai. Murid menulis apa yang sudah diketahui tentang topik ini di sticky note."
+      }
+    )), /* @__PURE__ */ React.createElement(Field, { label: "Tindak lanjut berdasarkan hasil" }, /* @__PURE__ */ React.createElement(
+      "textarea",
+      {
+        style: ta,
+        rows: 2,
+        value: ma.asesmenAwalTindakLanjut || "",
+        onChange: (e) => updMA("asesmenAwalTindakLanjut", e.target.value),
+        placeholder: "Contoh: Jika murid sudah memahami konsep dasar \u2192 langsung ke tahap aplikasi. Jika belum \u2192 guru menyajikan apersepsi tambahan sebelum masuk inti."
+      }
+    ))), React.createElement(Field, { label: "Kompetensi Awal (kemampuan prasyarat murid)" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.kompetensiAwal, onChange: (e) => updMA("kompetensiAwal", e.target.value), placeholder: "Contoh: Murid telah memahami operasi penjumlahan dan pengurangan bilangan cacah." })), React.createElement(Field, { label: "Pemahaman Bermakna" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.pemahamanBermakna, onChange: (e) => updMA("pemahamanBermakna", e.target.value), placeholder: "Contoh: Murid memahami bahwa nilai tempat membantu membaca bilangan besar dengan lebih mudah." })), React.createElement(Field, { label: "Pertanyaan Pemantik" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.pertanyaanPemantik, onChange: (e) => updMA("pertanyaanPemantik", e.target.value), placeholder: "Contoh: Bagaimana caramu membaca angka 1.000.000 dengan cepat tanpa menghitung satu-satu nolnya?" })), React.createElement("div", { style: { background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 9, padding: "10px 12px", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 12, color: "#1e40af", marginBottom: 10 } }, "D.2 Kerangka Pembelajaran"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 600, fontSize: 11, color: "#374151", marginBottom: 6 } }, "a. Praktik Pedagogis"), /* @__PURE__ */ React.createElement(Field, { label: "Model Pembelajaran" }, /* @__PURE__ */ React.createElement("select", { style: css.input, value: ma.modelPembelajaran, onChange: (e) => updMA("modelPembelajaran", e.target.value) }, MODEL_PEMBELAJARAN.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))), ma.modelPembelajaran.startsWith("\u2728") && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "#1d4ed8", marginTop: 3 } }, "\u2728 AI akan analisis materi dan pilih model terbaik")), /* @__PURE__ */ React.createElement(Field, { label: "Metode Pembelajaran" }, /* @__PURE__ */ React.createElement(
       "textarea",
       {
         style: ta,
@@ -18179,94 +18483,11 @@ Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
         onChange: (e) => updMA("pemanfaatanDigital", e.target.value),
         placeholder: "Contoh: (1) Video/Animasi: guru menampilkan video tentang ... sebagai stimulus. (2) Pencarian Informasi: murid menggunakan browser untuk mencari artikel/video terkait .... (3) Pembuatan Produk: murid menggunakan Canva/PowerPoint untuk menyajikan hasil."
       }
-    ))),
-    /* @__PURE__ */ React.createElement(Field, { label: "Sarana, Prasarana, dan Sumber Belajar" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.saranaPrasarana, onChange: (e) => updMA("saranaPrasarana", e.target.value), placeholder: "Contoh: Buku siswa, kartu bilangan, papan tulis, proyektor." })),
-    /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginTop: 18, marginBottom: 4 } }, "C. Kegiatan Pembelajaran"),
-    /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#6b7280", marginBottom: 10 } }, ma.pertemuan.length, " pertemuan \xD7 ", ma.jpPerPertemuan, " JP \u2014 ", ma.modelPembelajaran.startsWith("\u2728") ? "model ditentukan AI" : ma.modelPembelajaran, /* @__PURE__ */ React.createElement(
-      "span",
-      {
-        style: { marginLeft: 8, color: "#3b82f6", cursor: "pointer", textDecoration: "underline", fontSize: 10 },
-        onClick: () => {
-          const el = document.querySelector("[data-pengaturan-modul]");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-        }
-      },
-      "\u2191 Ubah pengaturan"
-    )),
-    ma.pertemuan.map((p, idx) => /* @__PURE__ */ React.createElement("div", { key: p._id, style: { border: "1px solid #e3e6eb", borderRadius: 10, padding: 14, marginBottom: 12, background: "#fafbfc" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a" } }, p.judul), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#6b7280" } }, "Metode:"), /* @__PURE__ */ React.createElement(
-      "select",
-      {
-        value: p.metodePertemuan || "\u2728 AI variasikan",
-        onChange: (e) => updPertemuan(idx, "metodePertemuan", e.target.value),
-        style: {
-          ...css.input,
-          fontSize: 11,
-          padding: "3px 8px",
-          color: (p.metodePertemuan || "\u2728 AI variasikan").startsWith("\u2728") ? "#7c3aed" : "#1a2b4a",
-          fontWeight: (p.metodePertemuan || "").startsWith("\u2728") ? 600 : 400,
-          border: (p.metodePertemuan || "").startsWith("\u2728") ? "1px solid #c4b5fd" : "1px solid #d8dde5"
-        }
-      },
-      METODE_PERTEMUAN.map((m) => /* @__PURE__ */ React.createElement("option", { key: m, value: m }, m))
-    ))), /* @__PURE__ */ React.createElement(Field, { label: "Kegiatan Awal / Pendahuluan" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: p.kegiatanAwal, onChange: (e) => updPertemuan(idx, "kegiatanAwal", e.target.value), placeholder: "Salam, doa, presensi, apersepsi, pertanyaan pemantik, menyampaikan tujuan pembelajaran..." })), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #d1d8e0", borderRadius: 8, padding: "8px 10px", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#1a2b4a", marginBottom: 6 } }, "Kegiatan Inti", (() => {
-      const fase = getModelFase(ma?.modelPembelajaran || "");
-      if (!fase) return null;
-      const modelNama = (ma?.modelPembelajaran || "").replace(/💚.*$/, "").trim();
-      return /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, fontSize: 10, color: "#7c3aed", marginLeft: 6 } }, "(", modelNama, ")");
-    })()), (() => {
-      const fase = getModelFase(ma?.modelPembelajaran || "");
-      const hints = fase ? {
-        m: fase.slice(0, 2).join(" \u2192 "),
-        a: fase.slice(2, 4).join(" \u2192 "),
-        r: fase.slice(4).join(" \u2192 ") || "Presentasi & Refleksi"
-      } : { m: "", a: "", r: "" };
-      return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(Field, { label: `A. Memahami${hints.m ? " \xB7 " + hints.m : ""}` }, /* @__PURE__ */ React.createElement(
-        "textarea",
-        {
-          style: { ...ta, background: "#f8faff" },
-          rows: 3,
-          value: p.kegiatanIntiMemahami || "",
-          onChange: (e) => updPertemuan(idx, "kegiatanIntiMemahami", e.target.value),
-          placeholder: hints.m || "Fase pengenalan topik, memicu rasa ingin tahu, orientasi masalah..."
-        }
-      )), /* @__PURE__ */ React.createElement(Field, { label: `B. Mengaplikasi${hints.a ? " \xB7 " + hints.a : ""}` }, /* @__PURE__ */ React.createElement(
-        "textarea",
-        {
-          style: { ...ta, background: "#f8faff" },
-          rows: 3,
-          value: p.kegiatanIntiMengaplikasi || "",
-          onChange: (e) => updPertemuan(idx, "kegiatanIntiMengaplikasi", e.target.value),
-          placeholder: hints.a || "Fase eksplorasi, investigasi, kerja kelompok, pengumpulan data..."
-        }
-      )), /* @__PURE__ */ React.createElement(Field, { label: `C. Merefleksi${hints.r ? " \xB7 " + hints.r : ""}` }, /* @__PURE__ */ React.createElement(
-        "textarea",
-        {
-          style: { ...ta, background: "#f8faff" },
-          rows: 3,
-          value: p.kegiatanIntiMerefleksi || "",
-          onChange: (e) => updPertemuan(idx, "kegiatanIntiMerefleksi", e.target.value),
-          placeholder: hints.r || "Fase presentasi hasil, refleksi, evaluasi, generalisasi..."
-        }
-      )));
-    })()), /* @__PURE__ */ React.createElement(Field, { label: "Kegiatan Penutup" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: p.kegiatanPenutup, onChange: (e) => updPertemuan(idx, "kegiatanPenutup", e.target.value), placeholder: "Penguatan + simpulan bersama \u2192 info kegiatan selanjutnya \u2192 syukur + salam..." })), /* @__PURE__ */ React.createElement(Field, { label: "\u{1F39F} Exit Ticket (Asesmen Formatif Akhir Pertemuan)" }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#555", marginBottom: 4 } }, "1-2 pertanyaan singkat yang murid jawab sebelum keluar kelas \u2014 untuk mengukur pemahaman secara cepat."), /* @__PURE__ */ React.createElement(
-      "textarea",
-      {
-        style: { ...ta, background: "#fffbeb" },
-        rows: 2,
-        value: p.exitTicket || "",
-        onChange: (e) => updPertemuan(idx, "exitTicket", e.target.value),
-        placeholder: "Contoh pertanyaan Exit Ticket:\n1. Sebutkan 1 hal terpenting yang kamu pelajari hari ini!\n2. Apa yang masih belum kamu pahami? Tulis di kertas lalu serahkan ke guru."
-      }
-    )), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef6f1", border: "1px solid #bfe0cc", borderRadius: 8, padding: 10, marginTop: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#1f6b3f", marginBottom: 6 } }, "\u{1F9E0} Penerapan Pembelajaran Mendalam \u2014 ", /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 400, fontSize: 10.5, color: "#3b7a57" } }, "3 Pendekatan Resmi KBC (KMA No. 512/2026)")), /* @__PURE__ */ React.createElement(Field, { label: "\u262F Berkesadaran (Mindful Learning KBC)" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.berkesadaran, onChange: (e) => updPertemuan(idx, "berkesadaran", e.target.value), placeholder: "Bagian mana dari kegiatan ini yang membuat murid sadar penuh atas tujuan dan proses belajarnya?" })), /* @__PURE__ */ React.createElement(Field, { label: "\u{1F4A1} Bermakna (Deep Learning KBC)" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.bermakna, onChange: (e) => updPertemuan(idx, "bermakna", e.target.value), placeholder: "Bagian mana yang membantu murid memahami relevansi dan manfaat nyata dari yang dipelajari?" })), /* @__PURE__ */ React.createElement(Field, { label: "\u{1F60A} Menggembirakan (Joyful Learning KBC)" }, /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.menggembirakan, onChange: (e) => updPertemuan(idx, "menggembirakan", e.target.value), placeholder: "Bagian mana yang membuat suasana belajar terasa positif dan menyenangkan bagi murid?" }))), isMadrasah && /* @__PURE__ */ React.createElement("div", { style: { background: "#fff7ea", border: "1px solid #f3dba3", borderRadius: 8, padding: 10, marginTop: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#7a5106", marginBottom: 6 } }, "\u{1F497} Integrasi Kurikulum Berbasis Cinta (Panca Cinta)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 } }, PANCA_CINTA.map((pc) => /* @__PURE__ */ React.createElement("label", { key: pc.id, style: { display: "flex", alignItems: "center", gap: 4, fontSize: 11, background: (p.pancaCinta || []).includes(pc.id) ? "#c9881a" : "#fff", color: (p.pancaCinta || []).includes(pc.id) ? "#fff" : "#7a5106", padding: "4px 8px", borderRadius: 12, cursor: "pointer", border: "1px solid #e8c87a" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: (p.pancaCinta || []).includes(pc.id), onChange: () => togglePancaCinta(idx, pc.id), style: { display: "none" } }), pc.label))), /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 2, value: p.bentukPenerapanCinta, onChange: (e) => updPertemuan(idx, "bentukPenerapanCinta", e.target.value), placeholder: "Bentuk penerapan nilai cinta pada pertemuan ini, contoh: mengajak murid bersyukur atas kemampuan berhitung sebagai nikmat Allah Swt." })))),
-    /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginTop: 18, marginBottom: 8 } }, "D. Asesmen"),
-    /* @__PURE__ */ React.createElement(Field, { label: "Bentuk Asesmen (pilih satu atau lebih)" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, BENTUK_ASESMEN.map((b) => /* @__PURE__ */ React.createElement("label", { key: b, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, background: ma.bentukAsesmen.includes(b) ? "#1f4a30" : "#f1f3f6", color: ma.bentukAsesmen.includes(b) ? "#fff" : "#374151", padding: "5px 10px", borderRadius: 14, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: ma.bentukAsesmen.includes(b), onChange: () => toggleCheklist("bentukAsesmen", b), style: { display: "none" } }), b)))),
-    /* @__PURE__ */ React.createElement(Field, { label: "Asesmen Formatif (selama proses pembelajaran)" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.asesmenFormatif, onChange: (e) => updMA("asesmenFormatif", e.target.value), placeholder: "Contoh: Observasi keaktifan diskusi kelompok, kuis singkat di akhir pertemuan." })),
-    /* @__PURE__ */ React.createElement(Field, { label: "Asesmen Sumatif (di akhir TP)" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.asesmenSumatif, onChange: (e) => updMA("asesmenSumatif", e.target.value), placeholder: "Contoh: Tes tertulis 5 soal uraian tentang nilai tempat bilangan." })),
-    /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginTop: 18, marginBottom: 8 } }, "E. Refleksi"),
-    /* @__PURE__ */ React.createElement(Field, { label: "Refleksi Guru" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.refleksiGuru, onChange: (e) => updMA("refleksiGuru", e.target.value), placeholder: "Apa yang berjalan baik? Apa yang perlu diperbaiki untuk pertemuan berikutnya?" })),
-    /* @__PURE__ */ React.createElement(Field, { label: "Refleksi Murid" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.refleksiMurid, onChange: (e) => updMA("refleksiMurid", e.target.value), placeholder: "Contoh pertanyaan refleksi: Bagian mana yang paling mudah/sulit kamu pahami hari ini?" })),
-    /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12.5, color: "#1a2b4a", marginTop: 18, marginBottom: 8 } }, "F. Lampiran"),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#eef1f8", border: "1px solid #c9d3e8", borderRadius: 8, padding: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78" } }, "\u{1F4CB} Lembar Kerja Peserta Didik (LKPD)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    ))), React.createElement(Field, { label: "Sarana, Prasarana, dan Sumber Belajar" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.saranaPrasarana, onChange: (e) => updMA("saranaPrasarana", e.target.value), placeholder: "Contoh: Buku siswa, kartu bilangan, papan tulis, proyektor." })))),
+    langkah === 4 && /* @__PURE__ */ React.createElement("div", null,
+      React.createElement(Field, { label: "Bentuk Asesmen (pilih satu atau lebih)" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, BENTUK_ASESMEN.map((b) => /* @__PURE__ */ React.createElement("label", { key: b, style: { display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, background: ma.bentukAsesmen.includes(b) ? "#1f4a30" : "#f1f3f6", color: ma.bentukAsesmen.includes(b) ? "#fff" : "#374151", padding: "5px 10px", borderRadius: 14, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: ma.bentukAsesmen.includes(b), onChange: () => toggleCheklist("bentukAsesmen", b), style: { display: "none" } }), b)))), React.createElement(Field, { label: "Asesmen Formatif (selama proses pembelajaran)" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.asesmenFormatif, onChange: (e) => updMA("asesmenFormatif", e.target.value), placeholder: "Contoh: Observasi keaktifan diskusi kelompok, kuis singkat di akhir pertemuan." })), React.createElement(Field, { label: "Asesmen Sumatif (di akhir TP)" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.asesmenSumatif, onChange: (e) => updMA("asesmenSumatif", e.target.value), placeholder: "Contoh: Tes tertulis 5 soal uraian tentang nilai tempat bilangan." })),
+      /* @__PURE__ */ React.createElement(LipatMA, { judul: "Refleksi guru dan murid", hint: "opsional" }, React.createElement(Field, { label: "Refleksi Guru" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.refleksiGuru, onChange: (e) => updMA("refleksiGuru", e.target.value), placeholder: "Apa yang berjalan baik? Apa yang perlu diperbaiki untuk pertemuan berikutnya?" })), React.createElement(Field, { label: "Refleksi Murid" }, /* @__PURE__ */ React.createElement("textarea", { style: ta, rows: 2, value: ma.refleksiMurid, onChange: (e) => updMA("refleksiMurid", e.target.value), placeholder: "Contoh pertanyaan refleksi: Bagian mana yang paling mudah/sulit kamu pahami hari ini?" }))),
+      /* @__PURE__ */ React.createElement(LipatMA, { judul: "Lampiran: LKPD, asesmen per indikator, rubrik", hint: "opsional" }, React.createElement("div", { style: { background: "#eef1f8", border: "1px solid #c9d3e8", borderRadius: 8, padding: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78" } }, "\u{1F4CB} Lembar Kerja Peserta Didik (LKPD)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => {
       const newLKPD = {
         id: uid(),
         judul: "LKPD " + ((ma.lkpdList || []).length + 1),
@@ -18344,8 +18565,7 @@ Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
         rows: 3,
         style: { ...ta, background: "#f8f9fc", resize: "vertical" }
       }
-    )))),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#eef1f8", border: "1px solid #c9d3e8", borderRadius: 8, padding: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78" } }, "\u{1F4CA} Asesmen per Indikator"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    )))), React.createElement("div", { style: { background: "#eef1f8", border: "1px solid #c9d3e8", borderRadius: 8, padding: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78" } }, "\u{1F4CA} Asesmen per Indikator"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
       const inds = (tpRow.indikator || []).map((ind) => ({
         indKode: ind.kode,
         indTeks: ind.text,
@@ -18381,8 +18601,7 @@ Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
         style: { background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 12 }
       },
       "\u2715"
-    ))))))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, fontSize: 10.5, color: "#5a6b85", fontStyle: "italic" } }, "Tip: Gunakan teknik yang bervariasi antar indikator \u2014 observasi untuk proses, tes tulis untuk konsep, unjuk kerja untuk keterampilan.")),
-    /* @__PURE__ */ React.createElement("div", { style: { background: "#eef1f8", border: "1px solid #c9d3e8", borderRadius: 8, padding: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78", marginBottom: 6 } }, "\u{1F4DD} Instrumen Asesmen & Rubrik Penilaian"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakLampiranAsesmen(tpTerpilih), small: true }, "\u{1F5A8}\uFE0F Cetak Lampiran")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "#5a6b85", marginBottom: 8 } }, "Soal lengkap dengan kunci jawaban (opsional \u2014 jika belum ada di Bank Soal)."), /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 3, value: ma.lampiranAsesmen, onChange: (e) => updMA("lampiranAsesmen", e.target.value), placeholder: "Soal + kunci jawaban (opsional)..." }), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12, paddingTop: 10, borderTop: "1px dashed #c9d3e8" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78" } }, "\u{1F4CA} Rubrik Penilaian"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
+    ))))))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, fontSize: 10.5, color: "#5a6b85", fontStyle: "italic" } }, "Tip: Gunakan teknik yang bervariasi antar indikator \u2014 observasi untuk proses, tes tulis untuk konsep, unjuk kerja untuk keterampilan.")), React.createElement("div", { style: { background: "#eef1f8", border: "1px solid #c9d3e8", borderRadius: 8, padding: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78", marginBottom: 6 } }, "\u{1F4DD} Instrumen Asesmen & Rubrik Penilaian"), /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakLampiranAsesmen(tpTerpilih), small: true }, "\u{1F5A8}\uFE0F Cetak Lampiran")), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10.5, color: "#5a6b85", marginBottom: 8 } }, "Soal lengkap dengan kunci jawaban (opsional \u2014 jika belum ada di Bank Soal)."), /* @__PURE__ */ React.createElement("textarea", { style: { ...ta, background: "#fff" }, rows: 3, value: ma.lampiranAsesmen, onChange: (e) => updMA("lampiranAsesmen", e.target.value), placeholder: "Soal + kunci jawaban (opsional)..." }), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12, paddingTop: 10, borderTop: "1px dashed #c9d3e8" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11.5, color: "#2c4a78" } }, "\u{1F4CA} Rubrik Penilaian"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
       const newKriteria = { id: uid(), nama: "Kriteria baru", deskripsi: { "4": "Sangat Baik: ...", "3": "Baik: ...", "2": "Cukup: ...", "1": "Perlu Bimbingan: ..." } };
       updMA("rubrik", [...ma.rubrik || [], newKriteria]);
     }, style: {
@@ -18453,8 +18672,21 @@ Semua isian (termasuk hasil AI) akan dikosongkan.`)) return;
       background: "transparent",
       color: "#3b5ea0",
       cursor: "pointer"
-    } }, tmpl.label)))))
+    } }, tmpl.label)))))),
+      /* @__PURE__ */ React.createElement("div", { "data-panel-cetak": "true", style: { ...ma_box, background: "#eef1f8", borderColor: "#c9d3e8" } },
+        /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13.5, color: "#1a2b4a", marginBottom: 8 } }, "\u{1F5A8}️ Cetak Modul Ajar"),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih), primary: true }, "\u{1F5A8}️ Cetak Lengkap"),
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "word"), style: { background: "#1b4332", color: "#fff", border: "none" } }, "\u{1F4DD} Unduh Word")),
+        /* @__PURE__ */ React.createElement(LipatMA, { judul: "Format cetak lain", hint: "Cover, Ringkas, Infografis" }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "cover"), small: true, title: "1-2 hal — untuk pengawas/kunjungan" }, "\u{1F4C4} Cover"),
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "ringkas"), small: true, title: "Format tabel padat" }, "\u{1F4CB} Ringkas"),
+          /* @__PURE__ */ React.createElement(Btn, { onClick: () => onCetakSatuTP(tpTerpilih, "infografis"), small: true, title: "Poster infografis 1 halaman" }, "\u{1F3A8} Infografis"))))),
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 14 } },
+      /* @__PURE__ */ React.createElement(Btn, { onClick: () => setLangkah(Math.max(1, langkah - 1)), small: true }, "← Sebelumnya"),
+      langkah < 4 && /* @__PURE__ */ React.createElement(Btn, { onClick: () => setLangkah(langkah + 1), small: true, primary: true }, "Berikutnya →"))
   );
+
 }
 const textareaStyle = { width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #d8dde5", fontSize: 12.5, fontFamily: "inherit", resize: "vertical" };
 import { createRoot } from "react-dom/client";
